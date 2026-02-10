@@ -1,0 +1,15 @@
+{
+  "name": "@carbon-trading-platform/api-gateway",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/api-gateway/src",
+  "projectType": "application",
+  "targets": {
+    "test": {
+      "executor": "@nx/jest:jest",
+      "options": {
+        "jestConfig": "apps/api-gateway/jest.config.cjs",
+        "passWithNoTests": false
+      }
+    }
+  }
+}
