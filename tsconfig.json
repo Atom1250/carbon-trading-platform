@@ -8,6 +8,9 @@
     },
     {
       "path": "./apps/carbon-trading-platform"
+    },
+    {
+      "path": "./libs/database"
     }
   ]
 }

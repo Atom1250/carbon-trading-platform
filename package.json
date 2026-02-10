@@ -3,17 +3,23 @@
   "version": "0.0.0",
   "license": "MIT",
   "scripts": {
-    "build": "nx run-many --target=build --all",
-    "lint": "nx run-many --target=lint --all",
-    "test": "nx run-many --target=test --all",
-    "test:watch": "nx run-many --target=test --all --watch",
-    "test:coverage": "nx run-many --target=test --all --coverage",
-    "prepare": "husky"
+    "build": "NX_DAEMON=false NX_SOCKET_DIR=/tmp/nx-tmp nx run-many --target=build --all --skip-sync",
+    "lint": "NX_DAEMON=false NX_SOCKET_DIR=/tmp/nx-tmp nx run-many --target=lint --all --skip-sync",
+    "test": "NX_DAEMON=false NX_SOCKET_DIR=/tmp/nx-tmp nx run-many --target=test --all",
+    "test:watch": "NX_DAEMON=false NX_SOCKET_DIR=/tmp/nx-tmp nx run-many --target=test --all --watch",
+    "test:coverage": "NX_DAEMON=false NX_SOCKET_DIR=/tmp/nx-tmp nx run-many --target=test --all --coverage",
+    "prepare": "husky",
+    "migrate:up": "dotenv -e .env -- node-pg-migrate -m libs/database/migrations up",
+    "migrate:down": "dotenv -e .env -- node-pg-migrate -m libs/database/migrations down",
+    "migrate:status": "dotenv -e .env -- node-pg-migrate -m libs/database/migrations redo --fake --dry-run",
+    "migrate:create": "dotenv -e .env -- node-pg-migrate -m libs/database/migrations create"
   },
   "private": true,
   "dependencies": {
     "axios": "^1.6.0",
-    "express": "^4.21.2"
+    "express": "^4.21.2",
+    "node-pg-migrate": "^7.9.1",
+    "pg": "^8.18.0"
   },
   "devDependencies": {
     "@commitlint/cli": "^19.8.1",
@@ -37,6 +43,8 @@
     "@types/express": "^4.17.21",
     "@types/jest": "^30.0.0",
     "@types/node": "20.19.9",
+    "@types/pg": "^8.16.0",
+    "dotenv-cli": "^11.0.0",
     "eslint": "^9.8.0",
     "eslint-config-prettier": "^10.0.0",
     "husky": "^9.1.7",
