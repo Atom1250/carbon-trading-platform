@@ -1,0 +1,13 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compileOnSave": false,
+  "files": [],
+  "references": [
+    {
+      "path": "./apps/carbon-trading-platform-e2e"
+    },
+    {
+      "path": "./apps/carbon-trading-platform"
+    }
+  ]
+}
