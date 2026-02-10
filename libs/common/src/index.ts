@@ -1,2 +1,13 @@
-// Shared types and utilities — populated in Session 1.3
-export {};
+export type {
+  PaginationMeta,
+  PaginationQuery,
+  ApiResponse,
+  PaginatedResponse,
+  ValidationFieldDetail,
+  ApiErrorResponse,
+  BaseEntity,
+  SoftDeletableEntity,
+  PartialBy,
+  RequiredBy,
+  KeysOfType,
+} from './types.js';

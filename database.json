@@ -1,0 +1,12 @@
+{
+  "db": {
+    "url": { "ENV": "DATABASE_URL" },
+    "migrations-dir": "libs/database/migrations",
+    "check-order": false
+  },
+  "db-test": {
+    "url": { "ENV": "DATABASE_TEST_URL" },
+    "migrations-dir": "libs/database/migrations",
+    "check-order": false
+  }
+}

@@ -9,9 +9,9 @@
     "test:watch": "NX_DAEMON=false NX_SOCKET_DIR=/tmp/nx-tmp nx run-many --target=test --all --watch",
     "test:coverage": "NX_DAEMON=false NX_SOCKET_DIR=/tmp/nx-tmp nx run-many --target=test --all --coverage",
     "prepare": "husky",
-    "migrate:up": "dotenv -e .env -- node-pg-migrate -m libs/database/migrations up",
-    "migrate:down": "dotenv -e .env -- node-pg-migrate -m libs/database/migrations down",
-    "migrate:status": "dotenv -e .env -- node-pg-migrate -m libs/database/migrations redo --fake --dry-run",
+    "migrate:up": "dotenv -e .env -- node-pg-migrate -m libs/database/migrations --no-check-order up",
+    "migrate:down": "dotenv -e .env -- node-pg-migrate -m libs/database/migrations --no-check-order down",
+    "migrate:status": "dotenv -e .env -- node-pg-migrate -m libs/database/migrations --no-check-order redo --fake --dry-run",
     "migrate:create": "dotenv -e .env -- node-pg-migrate -m libs/database/migrations create"
   },
   "private": true,
@@ -19,7 +19,9 @@
     "axios": "^1.6.0",
     "express": "^4.21.2",
     "node-pg-migrate": "^7.9.1",
-    "pg": "^8.18.0"
+    "pg": "^8.18.0",
+    "winston": "^3.19.0",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@commitlint/cli": "^19.8.1",
@@ -44,6 +46,7 @@
     "@types/jest": "^30.0.0",
     "@types/node": "20.19.9",
     "@types/pg": "^8.16.0",
+    "@types/uuid": "^10.0.0",
     "dotenv-cli": "^11.0.0",
     "eslint": "^9.8.0",
     "eslint-config-prettier": "^10.0.0",

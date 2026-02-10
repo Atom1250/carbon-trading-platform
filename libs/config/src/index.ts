@@ -1,2 +1,2 @@
-// Environment configuration — populated in Session 1.3
-export {};
+export { loadConfig, parseCorsOrigins } from './config.js';
+export type { AppConfig, RawConfig } from './config.js';

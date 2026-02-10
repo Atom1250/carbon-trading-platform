@@ -1,0 +1,15 @@
+{
+  "name": "@carbon-trading-platform/logger",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/logger/src",
+  "projectType": "library",
+  "targets": {
+    "test": {
+      "executor": "@nx/jest:jest",
+      "options": {
+        "jestConfig": "libs/logger/jest.config.cjs",
+        "passWithNoTests": false
+      }
+    }
+  }
+}

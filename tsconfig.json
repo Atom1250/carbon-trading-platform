@@ -10,7 +10,19 @@
       "path": "./apps/carbon-trading-platform"
     },
     {
+      "path": "./libs/common"
+    },
+    {
+      "path": "./libs/config"
+    },
+    {
       "path": "./libs/database"
+    },
+    {
+      "path": "./libs/errors"
+    },
+    {
+      "path": "./libs/logger"
     }
   ]
 }

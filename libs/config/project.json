@@ -1,0 +1,15 @@
+{
+  "name": "@carbon-trading-platform/config",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/config/src",
+  "projectType": "library",
+  "targets": {
+    "test": {
+      "executor": "@nx/jest:jest",
+      "options": {
+        "jestConfig": "libs/config/jest.config.cjs",
+        "passWithNoTests": false
+      }
+    }
+  }
+}
