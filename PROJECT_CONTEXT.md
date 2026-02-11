@@ -103,6 +103,22 @@
 - 29 new tests (15 RegistrationService unit + 14 route), 79 auth-service total
 - Commit: `feat(auth): session 2.3 - user registration service`
 
+### Session 2.4 — API Gateway Routing (`apps/api-gateway`)
+
+- `ServiceConfig` interface + `getServiceRegistry()` factory (env-configurable URLs for auth + institutions)
+- `createProxyMiddleware(serviceName, config)` — axios-based reverse proxy:
+  - Forwards method, path, query, body to downstream services
+  - Injects `X-Request-ID`, `X-Forwarded-For`, `X-Forwarded-Proto`
+  - Strips hop-by-hop headers from responses
+  - Returns 503 `ServiceUnavailableError` on ECONNREFUSED / ETIMEDOUT / ENOTFOUND
+- `HealthMonitor` — checks downstream service health endpoints with 5s timeout
+- Routes: `/api/v1/auth/*` → auth-service, `/api/v1/institutions/*` → institutions-service
+- `GET /health/detailed` now includes downstream service health; returns `degraded` status when any service is unhealthy
+- `AppDependencies` extended with optional `serviceRegistry` and `healthMonitor` (backward compatible)
+- 34 new tests (13 proxy, 8 healthMonitor, 8 app proxy routes, 3 health routes + monitor, 2 service config)
+- 81 api-gateway tests total, 313 workspace total
+- Commit: `feat(api-gateway): session 2.4 - gateway routing`
+
 ---
 
 ## Current Project Structure
@@ -114,12 +130,17 @@ apps/
       app.ts                    # Express factory
       server.ts                 # Runtime entry (excluded from coverage)
       index.ts                  # Public API
+      config/
+        services.config.ts      # ServiceConfig + getServiceRegistry()
       middleware/
         requestId.ts            # X-Request-ID propagation
         logging.ts              # HTTP access log (Winston)
         errorHandler.ts         # RFC 7807 global error handler
+        proxy.ts                # Axios reverse proxy middleware
       routes/
-        health.routes.ts        # GET /health, GET /health/detailed
+        health.routes.ts        # GET /health, GET /health/detailed (+ service health)
+      services/
+        healthMonitor.ts        # Downstream service health checker
       types/
         express.d.ts            # Augments Request with requestId
 apps/
@@ -176,7 +197,7 @@ contracts/                      # Standalone Hardhat project (NOT in Nx)
 ## Test Summary (cumulative)
 | Project            | Tests | Coverage |
 |--------------------|-------|----------|
-| api-gateway        | 49    | 100% stmt/fn/line, 86% branch |
+| api-gateway        | 81    | 100% stmt/fn/line |
 | errors             | 25    | 100%     |
 | logger             | 11    | 100%     |
 | config             | 22    | 100%     |
@@ -185,7 +206,7 @@ contracts/                      # Standalone Hardhat project (NOT in Nx)
 | auth-service       | 79    | 100% stmt/fn/line |
 | institution-service| 40    | 100% stmt/fn/line |
 | contracts (Hardhat)| 20    | N/A      |
-| **Total**          | **281** |        |
+| **Total**          | **313** |        |
 
 ---
 

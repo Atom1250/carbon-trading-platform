@@ -2,6 +2,8 @@ import request from 'supertest';
 import express from 'express';
 import { createHealthRouter } from './health.routes.js';
 import { errorHandler } from '../middleware/errorHandler.js';
+import type { HealthMonitor } from '../services/healthMonitor.js';
+
 jest.mock('@libs/logger', () => ({
   createLogger: jest.fn(() => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn() })),
 }));
@@ -9,6 +11,7 @@ jest.mock('@libs/logger', () => ({
 function buildTestApp(
   checkDatabase: () => Promise<void>,
   checkRedis: () => Promise<void>,
+  healthMonitor?: HealthMonitor,
 ): express.Express {
   const app = express();
   app.use(express.json());
@@ -17,7 +20,7 @@ function buildTestApp(
     (req as unknown as Record<string, string>)['requestId'] = 'test-req-id';
     next();
   });
-  app.use('/health', createHealthRouter({ checkDatabase, checkRedis }));
+  app.use('/health', createHealthRouter({ checkDatabase, checkRedis }, healthMonitor));
   app.use(errorHandler);
   return app;
 }
@@ -130,5 +133,59 @@ describe('GET /health/detailed', () => {
 
     expect(checkDb).toHaveBeenCalledTimes(1);
     expect(checkRedis).toHaveBeenCalledTimes(1);
+  });
+
+  it('should include downstream service health when healthMonitor is provided', async () => {
+    const mockMonitor = {
+      checkAllServices: jest.fn().mockResolvedValue([
+        { service: 'auth', status: 'healthy', responseTime: 15 },
+        { service: 'institutions', status: 'healthy', responseTime: 20 },
+      ]),
+      checkService: jest.fn(),
+    } as unknown as HealthMonitor;
+
+    const app = buildTestApp(
+      jest.fn().mockResolvedValue(undefined),
+      jest.fn().mockResolvedValue(undefined),
+      mockMonitor,
+    );
+    const res = await request(app).get('/health/detailed');
+
+    expect(res.status).toBe(200);
+    expect(res.body.services).toHaveLength(2);
+    expect(res.body.services[0].service).toBe('auth');
+    expect(res.body.services[0].status).toBe('healthy');
+  });
+
+  it('should return degraded status when a downstream service is unhealthy', async () => {
+    const mockMonitor = {
+      checkAllServices: jest.fn().mockResolvedValue([
+        { service: 'auth', status: 'healthy', responseTime: 15 },
+        { service: 'institutions', status: 'unhealthy', error: 'Connection refused' },
+      ]),
+      checkService: jest.fn(),
+    } as unknown as HealthMonitor;
+
+    const app = buildTestApp(
+      jest.fn().mockResolvedValue(undefined),
+      jest.fn().mockResolvedValue(undefined),
+      mockMonitor,
+    );
+    const res = await request(app).get('/health/detailed');
+
+    expect(res.status).toBe(200);
+    expect(res.body.status).toBe('degraded');
+    expect(res.body.services).toHaveLength(2);
+  });
+
+  it('should not include services field when no healthMonitor is provided', async () => {
+    const app = buildTestApp(
+      jest.fn().mockResolvedValue(undefined),
+      jest.fn().mockResolvedValue(undefined),
+    );
+    const res = await request(app).get('/health/detailed');
+
+    expect(res.status).toBe(200);
+    expect(res.body.services).toBeUndefined();
   });
 });

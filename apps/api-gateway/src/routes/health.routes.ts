@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import type { NextFunction, Request, Response } from 'express';
 import { ServiceUnavailableError } from '@libs/errors';
+import type { HealthMonitor, ServiceHealth } from '../services/healthMonitor.js';
 
 export interface HealthDependencies {
   checkDatabase: () => Promise<void>;
@@ -23,15 +24,16 @@ interface ReadinessResponse {
   status: 'healthy' | 'degraded';
   timestamp: string;
   checks: DependencyStatus;
+  services?: ServiceHealth[];
 }
 
 /**
  * Create health check router with injectable dependency checkers.
  *
  * GET /health        — Liveness probe (always 200 if process is alive)
- * GET /health/detailed — Readiness probe (checks DB + Redis)
+ * GET /health/detailed — Readiness probe (checks DB + Redis + downstream services)
  */
-export function createHealthRouter(deps: HealthDependencies): Router {
+export function createHealthRouter(deps: HealthDependencies, healthMonitor?: HealthMonitor): Router {
   const router = Router();
 
   router.get('/', (_req: Request, res: Response) => {
@@ -69,6 +71,15 @@ export function createHealthRouter(deps: HealthDependencies): Router {
         timestamp: new Date().toISOString(),
         checks,
       };
+
+      if (healthMonitor) {
+        body.services = await healthMonitor.checkAllServices();
+        const anyUnhealthy = body.services.some((s) => s.status === 'unhealthy');
+        if (anyUnhealthy) {
+          body.status = 'degraded';
+        }
+      }
+
       res.status(200).json(body);
     } catch (err) {
       next(err);

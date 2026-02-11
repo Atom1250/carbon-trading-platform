@@ -3,6 +3,8 @@ import { createLogger } from '@libs/logger';
 import { createDatabaseClientFromEnv } from '@libs/database';
 import Redis from 'ioredis';
 import { createApp } from './app.js';
+import { getServiceRegistry } from './config/services.config.js';
+import { HealthMonitor } from './services/healthMonitor.js';
 
 const logger = createLogger('api-gateway');
 
@@ -10,6 +12,8 @@ async function main(): Promise<void> {
   const config = loadConfig();
   const db = createDatabaseClientFromEnv();
   const redis = new Redis(config.REDIS_URL);
+  const serviceRegistry = getServiceRegistry();
+  const healthMonitor = new HealthMonitor(serviceRegistry);
 
   const app = createApp({
     corsOrigins: config.CORS_ORIGINS,
@@ -21,6 +25,8 @@ async function main(): Promise<void> {
       const pong = await redis.ping();
       if (pong !== 'PONG') throw new Error('Redis health check failed');
     },
+    serviceRegistry,
+    healthMonitor,
   });
 
   const server = app.listen(config.PORT, () => {

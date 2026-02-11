@@ -1,8 +1,14 @@
 import request from 'supertest';
+import axios from 'axios';
 import { createApp } from './app.js';
+import type { ServiceConfig } from './config/services.config.js';
+
+jest.mock('axios');
 jest.mock('@libs/logger', () => ({
   createLogger: jest.fn(() => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn() })),
 }));
+
+const mockedAxios = axios as jest.MockedFunction<typeof axios>;
 
 const testDeps = {
   corsOrigins: 'http://localhost:3000',
@@ -116,6 +122,137 @@ describe('createApp', () => {
         .send({ test: true })
         .set('Content-Type', 'application/json');
       // 404 is fine — body parsing middleware ran
+      expect(res.status).toBe(404);
+    });
+  });
+
+  describe('proxy routes', () => {
+    const serviceRegistry: Record<string, ServiceConfig> = {
+      auth: { url: 'http://localhost:3002', healthPath: '/health', timeout: 30_000 },
+      institutions: { url: 'http://localhost:3003', healthPath: '/health', timeout: 30_000 },
+    };
+
+    const proxyApp = createApp({ ...testDeps, serviceRegistry });
+
+    beforeEach(() => jest.clearAllMocks());
+
+    it('should route /api/v1/auth/* to auth service', async () => {
+      mockedAxios.mockResolvedValue({
+        status: 200,
+        data: { token: 'abc' },
+        headers: { 'content-type': 'application/json' },
+      });
+
+      const res = await request(proxyApp)
+        .post('/api/v1/auth/login')
+        .send({ email: 'user@test.com', password: 'pass' });
+
+      expect(res.status).toBe(200);
+      expect(res.body.token).toBe('abc');
+      expect(mockedAxios).toHaveBeenCalledWith(
+        expect.objectContaining({
+          url: 'http://localhost:3002/login',
+        }),
+      );
+    });
+
+    it('should route /api/v1/auth/register to auth service', async () => {
+      mockedAxios.mockResolvedValue({
+        status: 201,
+        data: { id: '123' },
+        headers: {},
+      });
+
+      const res = await request(proxyApp)
+        .post('/api/v1/auth/register')
+        .send({ email: 'new@test.com' });
+
+      expect(res.status).toBe(201);
+      expect(mockedAxios).toHaveBeenCalledWith(
+        expect.objectContaining({
+          url: 'http://localhost:3002/register',
+        }),
+      );
+    });
+
+    it('should route /api/v1/institutions to institutions service', async () => {
+      mockedAxios.mockResolvedValue({
+        status: 200,
+        data: [{ id: '1', name: 'Test Corp' }],
+        headers: {},
+      });
+
+      const res = await request(proxyApp).get('/api/v1/institutions');
+
+      expect(res.status).toBe(200);
+      expect(mockedAxios).toHaveBeenCalledWith(
+        expect.objectContaining({
+          url: 'http://localhost:3003/',
+        }),
+      );
+    });
+
+    it('should route POST /api/v1/institutions to institutions service', async () => {
+      mockedAxios.mockResolvedValue({
+        status: 201,
+        data: { id: '2' },
+        headers: {},
+      });
+
+      const res = await request(proxyApp)
+        .post('/api/v1/institutions')
+        .send({ name: 'New Corp' });
+
+      expect(res.status).toBe(201);
+      expect(mockedAxios).toHaveBeenCalledWith(
+        expect.objectContaining({
+          url: 'http://localhost:3003/',
+          method: 'POST',
+        }),
+      );
+    });
+
+    it('should return 503 when auth service is down', async () => {
+      const err = new Error('connect ECONNREFUSED');
+      (err as NodeJS.ErrnoException).code = 'ECONNREFUSED';
+      mockedAxios.mockRejectedValue(err);
+
+      const res = await request(proxyApp).post('/api/v1/auth/login').send({});
+
+      expect(res.status).toBe(503);
+      expect(res.body.title).toBe('Service Unavailable');
+    });
+
+    it('should return 503 when institutions service is down', async () => {
+      const err = new Error('connect ECONNREFUSED');
+      (err as NodeJS.ErrnoException).code = 'ECONNREFUSED';
+      mockedAxios.mockRejectedValue(err);
+
+      const res = await request(proxyApp).get('/api/v1/institutions');
+
+      expect(res.status).toBe(503);
+    });
+
+    it('should forward request ID to downstream services', async () => {
+      mockedAxios.mockResolvedValue({ status: 200, data: {}, headers: {} });
+
+      await request(proxyApp)
+        .get('/api/v1/auth/me')
+        .set('X-Request-ID', 'trace-abc-123');
+
+      expect(mockedAxios).toHaveBeenCalledWith(
+        expect.objectContaining({
+          headers: expect.objectContaining({
+            'x-request-id': 'trace-abc-123',
+          }),
+        }),
+      );
+    });
+
+    it('should not mount proxy routes when serviceRegistry is not provided', async () => {
+      const noProxyApp = createApp(testDeps);
+      const res = await request(noProxyApp).get('/api/v1/auth/login');
+
       expect(res.status).toBe(404);
     });
   });

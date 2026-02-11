@@ -8,9 +8,14 @@ import { loggingMiddleware } from './middleware/logging.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { createHealthRouter } from './routes/health.routes.js';
 import type { HealthDependencies } from './routes/health.routes.js';
+import { createProxyMiddleware } from './middleware/proxy.js';
+import type { ServiceConfig } from './config/services.config.js';
+import type { HealthMonitor } from './services/healthMonitor.js';
 
 export interface AppDependencies extends HealthDependencies {
   corsOrigins?: string;
+  serviceRegistry?: Record<string, ServiceConfig>;
+  healthMonitor?: HealthMonitor;
 }
 
 /**
@@ -58,7 +63,18 @@ export function createApp(deps: AppDependencies): Express {
   app.use(loggingMiddleware);
 
   // 6. Routes
-  app.use('/health', createHealthRouter(deps));
+  app.use('/health', createHealthRouter(deps, deps.healthMonitor));
+
+  // Proxy routes — forward to downstream microservices
+  if (deps.serviceRegistry) {
+    const registry = deps.serviceRegistry;
+    if (registry['auth']) {
+      app.use('/api/v1/auth', createProxyMiddleware('auth', registry['auth']));
+    }
+    if (registry['institutions']) {
+      app.use('/api/v1/institutions', createProxyMiddleware('institutions', registry['institutions']));
+    }
+  }
 
   // Catch-all 404 for unrecognised routes
   app.use((_req, res) => {
