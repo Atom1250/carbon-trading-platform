@@ -43,6 +43,21 @@
 - **Key fix:** Express 4 async route handlers must call `next(err)` (not `throw`) — wrap in try/catch.
 - Commit: `feat(api-gateway): session 1.4 - api gateway foundation`
 
+### Session 1.5 — Smart Contract Foundation (`contracts/`)
+- Standalone Hardhat project in `contracts/` (NOT in Nx workspace — Hardhat has its own pipeline)
+- `PlatformAssets.sol` — ERC-1155 multi-token contract (OpenZeppelin v4.9.x):
+  - Roles: `DEFAULT_ADMIN_ROLE`, `MINTER_ROLE`, `PAUSER_ROLE` (AccessControl)
+  - KYC registry: `_kycApproved` mapping; enforced on all peer transfers via `_beforeTokenTransfer`
+  - `mint(to, tokenId, amount, tokenURI, data)` — requires KYC + MINTER_ROLE, stores per-token URI
+  - `mintBatch(to, tokenIds, amounts, data)` — batch mint with KYC check
+  - `burn(from, tokenId, amount)` — owner/approved only, emits AssetBurned (carbon credit retirement)
+  - `approveKYC` / `revokeKYC` — admin only; mints/burns exempt from KYC check on zero-address side
+  - `pause()` / `unpause()` — PAUSER_ROLE gates all state-changing operations
+- Solidity 0.8.20, optimizer 200 runs; Hardhat chainId 31337
+- 20 tests (ethers v6 + chai): Deployment × 2, Minting × 5, KYC Management × 6, Burning × 4, Pause/Unpause × 2 — all passing
+- **Key decision:** OZ v4 (not v5) because execution plan uses `_beforeTokenTransfer` + `security/Pausable` (v4 API)
+- Commit: `feat(blockchain): session 1.4 - smart contract foundation`
+
 ---
 
 ## Current Project Structure
@@ -68,18 +83,26 @@ libs/
   config/src/                   # Zod config (loadConfig, parseCorsOrigins)
   common/src/                   # Shared TS types
   database/src/                 # DatabaseClient + 10 migrations
+contracts/                      # Standalone Hardhat project (NOT in Nx)
+  contracts/
+    PlatformAssets.sol          # ERC-1155 with KYC, AccessControl, Pausable
+  test/
+    PlatformAssets.test.ts      # 20 Hardhat tests
+  hardhat.config.ts
+  package.json
 ```
 
 ## Test Summary (cumulative)
-| Project       | Tests | Coverage |
-|---------------|-------|----------|
-| api-gateway   | 49    | 100% stmt/fn/line, 86% branch |
-| errors        | 25    | 100%     |
-| logger        | 11    | 100%     |
-| config        | 22    | 100%     |
-| common        | 14    | 100%     |
-| database      | 16    | 100%     |
-| **Total**     | **137** |        |
+| Project            | Tests | Coverage |
+|--------------------|-------|----------|
+| api-gateway        | 49    | 100% stmt/fn/line, 86% branch |
+| errors             | 25    | 100%     |
+| logger             | 11    | 100%     |
+| config             | 22    | 100%     |
+| common             | 14    | 100%     |
+| database           | 16    | 100%     |
+| contracts (Hardhat)| 20    | N/A      |
+| **Total**          | **157** |        |
 
 ---
 
@@ -87,4 +110,4 @@ libs/
 - All errors extend `ApplicationError` from `@libs/errors`; error handler uses `isOperationalError()` to decide 500 vs real statusCode
 - CORS: whitelist-only via `parseCorsOrigins()`, never `*`
 - All async Express route handlers: try/catch + `next(err)`, never bare `throw`
-- Commit scopes: `session`, `api-gateway`, `database`, `logger`, `errors`, `config`, `common`
+- Commit scopes: `session`, `api-gateway`, `database`, `logger`, `errors`, `config`, `common`, `blockchain`
