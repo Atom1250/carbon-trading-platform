@@ -58,6 +58,17 @@
 - **Key decision:** OZ v4 (not v5) because execution plan uses `_beforeTokenTransfer` + `security/Pausable` (v4 API)
 - Commit: `feat(blockchain): session 1.4 - smart contract foundation`
 
+### Session 2.0 — Missing DB Migrations (Rebase)
+- Added 4 migrations required for Phase 2 auth features:
+  - **0011** `login_attempts` — tracks all login attempts (email, ip_address, success, failure_reason, attempted_at); composite partial index `WHERE success = FALSE`
+  - **0012** `email_verification_tokens` — one-per-user enforced via `UNIQUE INDEX WHERE used_at IS NULL`; `ON DELETE CASCADE` on user_id FK
+  - **0013** `password_reset_tokens` — trigger `check_password_reset_token_limit()` limits to 3 active tokens per user; partial index `WHERE used_at IS NULL`
+  - **0014** `session_cleanup_index` — plain indexes on `sessions(expires_at)` and `sessions(user_id, is_revoked)`
+- 25 migration unit tests (SQL structure assertions via mock pgm — no live DB required)
+- **Confirmed column names:** `has_verified_email` (not `email_verified`); role enum = `developer | investor | compliance_officer | operations`
+- Migration file format: `.js` with `exports.up = (pgm) => { pgm.sql(...) }` / `exports.down`
+- Commit: `feat(database): session 2.0 - add migrations 0011-0014`
+
 ### Session 2.1 — Authentication Service (`apps/auth-service`)
 - Standalone Nx Express app with dependency-injected services (`createApp(deps)` pattern)
 - `TokenService` — JWT access tokens (15m) + refresh tokens (7d); `issuer`/`audience` claims; throws `AuthenticationError` on invalid/expired
@@ -95,7 +106,8 @@ libs/
   errors/src/                   # ApplicationError hierarchy + isOperationalError
   config/src/                   # Zod config (loadConfig, parseCorsOrigins)
   common/src/                   # Shared TS types
-  database/src/                 # DatabaseClient + 10 migrations
+  database/src/                 # DatabaseClient + migration tests
+  database/migrations/          # 14 migration files (0001-0014, .js format)
 contracts/                      # Standalone Hardhat project (NOT in Nx)
   contracts/
     PlatformAssets.sol          # ERC-1155 with KYC, AccessControl, Pausable
@@ -113,9 +125,10 @@ contracts/                      # Standalone Hardhat project (NOT in Nx)
 | logger             | 11    | 100%     |
 | config             | 22    | 100%     |
 | common             | 14    | 100%     |
-| database           | 16    | 100%     |
+| database           | 41    | 100%     |
+| auth-service       | 50    | 100% stmt/fn/line |
 | contracts (Hardhat)| 20    | N/A      |
-| **Total**          | **157** |        |
+| **Total**          | **212** |        |
 
 ---
 
@@ -123,4 +136,8 @@ contracts/                      # Standalone Hardhat project (NOT in Nx)
 - All errors extend `ApplicationError` from `@libs/errors`; error handler uses `isOperationalError()` to decide 500 vs real statusCode
 - CORS: whitelist-only via `parseCorsOrigins()`, never `*`
 - All async Express route handlers: try/catch + `next(err)`, never bare `throw`
-- Commit scopes: `session`, `api-gateway`, `database`, `logger`, `errors`, `config`, `common`, `blockchain`
+- Commit scopes: `session`, `api-gateway`, `auth`, `database`, `logger`, `errors`, `config`, `common`, `blockchain`, `institution`
+- Migration format: `.js` files in `libs/database/migrations/`, using `exports.up = (pgm) => { pgm.sql(...) }`
+- Error classes: use specific subclasses (`NotFoundError`, `ConflictError`, `AuthenticationError`, etc.) not `ApplicationError` with statusCode options
+- No `errorHandler` in `@libs/errors` — lives in each app's own `src/middleware/errorHandler.ts`
+- No shared middleware in `@libs/common` — each app has its own `requestId.ts`, `logging.ts`, `errorHandler.ts`
