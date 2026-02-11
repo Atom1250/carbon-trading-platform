@@ -69,6 +69,15 @@
 - Migration file format: `.js` with `exports.up = (pgm) => { pgm.sql(...) }` / `exports.down`
 - Commit: `feat(database): session 2.0 - add migrations 0011-0014`
 
+### Session 2.2 — Institution Service (`apps/institution-service`)
+- New Nx Express app `apps/institution-service` (port 3003), `createApp(deps)` DI pattern
+- `InstitutionService` — `create` (ConflictError on dup reg number), `findById` (NotFoundError 404), `update` (tier/status), `list` (status/tier/countryCode filters + limit/offset pagination)
+- Dynamic parameterised queries using `filterValues.length + 1` for safe LIMIT/OFFSET numbering
+- `countryCode` auto-uppercased via Zod `.transform()` on create and list
+- Endpoints: `POST /institutions` (201), `GET /institutions` (200 + metadata), `GET /institutions/:id` (200/404), `PATCH /institutions/:id` (200/404/422), `GET /health`
+- 40 tests: 17 service (all CRUD + filter + error paths), 23 route (supertest, makeService factory)
+- Commit: `feat(institution): session 2.2 - institution service`
+
 ### Session 2.1 — Authentication Service (`apps/auth-service`)
 - Standalone Nx Express app with dependency-injected services (`createApp(deps)` pattern)
 - `TokenService` — JWT access tokens (15m) + refresh tokens (7d); `issuer`/`audience` claims; throws `AuthenticationError` on invalid/expired
@@ -108,6 +117,19 @@ libs/
   common/src/                   # Shared TS types
   database/src/                 # DatabaseClient + migration tests
   database/migrations/          # 14 migration files (0001-0014, .js format)
+apps/
+  institution-service/
+    src/
+      app.ts                    # Express factory (createApp)
+      server.ts                 # Runtime entry
+      index.ts                  # Public API
+      middleware/               # requestId, logging, errorHandler (per-app)
+      routes/
+        institution.routes.ts   # POST/GET/PATCH /institutions
+      services/
+        InstitutionService.ts   # create, findById, update, list
+      types/
+        institution.types.ts    # Institution, DTOs, query types
 contracts/                      # Standalone Hardhat project (NOT in Nx)
   contracts/
     PlatformAssets.sol          # ERC-1155 with KYC, AccessControl, Pausable
@@ -127,8 +149,9 @@ contracts/                      # Standalone Hardhat project (NOT in Nx)
 | common             | 14    | 100%     |
 | database           | 41    | 100%     |
 | auth-service       | 50    | 100% stmt/fn/line |
+| institution-service| 40    | 100% stmt/fn/line |
 | contracts (Hardhat)| 20    | N/A      |
-| **Total**          | **212** |        |
+| **Total**          | **252** |        |
 
 ---
 
