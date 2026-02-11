@@ -5,6 +5,7 @@ import { createApp } from './app.js';
 import { TokenService } from './services/TokenService.js';
 import { AuthService } from './services/AuthService.js';
 import { MFAService } from './services/MFAService.js';
+import { RegistrationService } from './services/RegistrationService.js';
 
 const logger = createLogger('auth-service');
 
@@ -15,11 +16,13 @@ async function main(): Promise<void> {
   const tokenService = new TokenService(config);
   const mfaService = new MFAService(db);
   const authService = new AuthService(db, tokenService, mfaService);
+  const registrationService = new RegistrationService(db);
 
   const app = createApp({
     tokenService,
     authService,
     mfaService,
+    registrationService,
     corsOrigins: config.CORS_ORIGINS,
   });
 

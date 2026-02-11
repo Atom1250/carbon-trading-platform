@@ -91,6 +91,18 @@
 - Deps added at root: `jsonwebtoken`, `bcrypt`, `speakeasy`, `qrcode` + `@types/*`
 - Commit: `feat(auth): session 2.1 - authentication service`
 
+### Session 2.3 — User Registration (`apps/auth-service`)
+
+- `RegistrationService` — `register()` creates user with bcrypt-hashed password (12 rounds), verifies institution exists and is active/pending, generates 24-hour email verification token (crypto.randomBytes 32), invalidates prior unused tokens before inserting new one
+- `verifyEmail(token)` — validates token exists, not used, not expired; marks token used + sets `has_verified_email = TRUE` on user
+- Routes: `POST /auth/register` (201), `POST /auth/verify-email` (200)
+- Zod validation: password strength (8+ chars, uppercase, lowercase, number, special char), UUID institutionId, role enum (`developer | investor | compliance_officer | operations`)
+- Email lowercased before all queries and inserts
+- Error responses: 409 ConflictError (duplicate email), 404 NotFoundError (institution), 403 AuthorizationError (suspended/closed institution), 422 ValidationError (invalid/used/expired token)
+- Updated `AuthAppDependencies` interface + `createApp(deps)` + `server.ts` to wire `RegistrationService`
+- 29 new tests (15 RegistrationService unit + 14 route), 79 auth-service total
+- Commit: `feat(auth): session 2.3 - user registration service`
+
 ---
 
 ## Current Project Structure
@@ -110,6 +122,28 @@ apps/
         health.routes.ts        # GET /health, GET /health/detailed
       types/
         express.d.ts            # Augments Request with requestId
+apps/
+  auth-service/
+    src/
+      app.ts                    # Express factory (createApp)
+      server.ts                 # Runtime entry
+      index.ts                  # Public API
+      middleware/
+        authenticate.ts         # JWT Bearer → req.user
+        requestId.ts            # X-Request-ID propagation
+        logging.ts              # HTTP access log
+        errorHandler.ts         # RFC 7807 error handler
+      routes/
+        auth.routes.ts          # login, refresh, logout, mfa/verify, register, verify-email
+        mfa.routes.ts           # mfa/setup, mfa/enable
+      services/
+        AuthService.ts          # login, refresh, logout, verifyMFA
+        TokenService.ts         # JWT access/refresh generation + verification
+        MFAService.ts           # TOTP setup, verify, enable
+        RegistrationService.ts  # register, verifyEmail
+      types/
+        auth.types.ts           # TokenPayload, UserRow, SafeUser, RegisterInput, etc.
+        express.d.ts            # Augments Request with user, requestId
 libs/
   logger/src/                   # createLogger(service) → ILogger
   errors/src/                   # ApplicationError hierarchy + isOperationalError
@@ -148,10 +182,10 @@ contracts/                      # Standalone Hardhat project (NOT in Nx)
 | config             | 22    | 100%     |
 | common             | 14    | 100%     |
 | database           | 41    | 100%     |
-| auth-service       | 50    | 100% stmt/fn/line |
+| auth-service       | 79    | 100% stmt/fn/line |
 | institution-service| 40    | 100% stmt/fn/line |
 | contracts (Hardhat)| 20    | N/A      |
-| **Total**          | **252** |        |
+| **Total**          | **281** |        |
 
 ---
 

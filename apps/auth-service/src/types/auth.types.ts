@@ -44,3 +44,38 @@ export interface RequestMeta {
   ipAddress: string;
   userAgent: string;
 }
+
+export interface RegisterInput {
+  institutionId: string;
+  email: string;
+  password: string;
+  firstName: string;
+  lastName: string;
+  role: 'developer' | 'investor' | 'compliance_officer' | 'operations';
+}
+
+export interface RegisterResult {
+  user: {
+    id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+    role: string;
+  };
+  verificationToken: string;
+}
+
+export interface VerifyEmailResult {
+  success: boolean;
+}
+
+export interface EmailVerificationTokenRow {
+  user_id: string;
+  expires_at: string;
+  used_at: string | null;
+}
+
+export interface InstitutionCheckRow {
+  id: string;
+  status: string;
+}

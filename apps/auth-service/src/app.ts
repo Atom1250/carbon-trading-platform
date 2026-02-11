@@ -11,11 +11,13 @@ import { createMFARouter } from './routes/mfa.routes.js';
 import type { AuthService } from './services/AuthService.js';
 import type { MFAService } from './services/MFAService.js';
 import type { TokenService } from './services/TokenService.js';
+import type { RegistrationService } from './services/RegistrationService.js';
 
 export interface AuthAppDependencies {
   tokenService: TokenService;
   authService: AuthService;
   mfaService: MFAService;
+  registrationService: RegistrationService;
   corsOrigins?: string;
 }
 
@@ -42,7 +44,7 @@ export function createApp(deps: AuthAppDependencies): Express {
   app.use(requestIdMiddleware);
   app.use(loggingMiddleware);
 
-  app.use('/auth', createAuthRouter(deps.authService));
+  app.use('/auth', createAuthRouter(deps.authService, deps.registrationService));
   app.use('/auth/mfa', createMFARouter(deps.mfaService, deps.tokenService));
 
   app.use((_req, res) => {
