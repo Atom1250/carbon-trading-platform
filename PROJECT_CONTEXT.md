@@ -58,6 +58,19 @@
 - **Key decision:** OZ v4 (not v5) because execution plan uses `_beforeTokenTransfer` + `security/Pausable` (v4 API)
 - Commit: `feat(blockchain): session 1.4 - smart contract foundation`
 
+### Session 2.1 — Authentication Service (`apps/auth-service`)
+- Standalone Nx Express app with dependency-injected services (`createApp(deps)` pattern)
+- `TokenService` — JWT access tokens (15m) + refresh tokens (7d); `issuer`/`audience` claims; throws `AuthenticationError` on invalid/expired
+- `AuthService` — bcrypt login (12 rounds), refresh token rotation (SHA-256 hash in `sessions.refresh_token_hash`), logout, MFA verification
+- `MFAService` — speakeasy TOTP setup (returns secret + QR code data URL), verify (±1 window), enable
+- `authenticate` middleware — factory pattern; extracts Bearer token → `req.user: TokenPayload`
+- Routes: `POST /auth/login|refresh|logout|mfa/verify|mfa/setup|mfa/enable`; Zod body validation; RFC 7807 errors
+- **Key decision:** Refresh tokens stored as SHA-256 hash in DB (`sessions.refresh_token_hash`) — matches migration 0004 column name
+- **DB column names (migration 0003/0004):** `has_enabled_mfa`, `mfa_secret`, `refresh_token_hash`, `is_revoked`
+- 50 tests, 6 suites, 100% stmt/fn/line coverage
+- Deps added at root: `jsonwebtoken`, `bcrypt`, `speakeasy`, `qrcode` + `@types/*`
+- Commit: `feat(auth): session 2.1 - authentication service`
+
 ---
 
 ## Current Project Structure
