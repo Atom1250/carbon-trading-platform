@@ -1,5 +1,5 @@
 /**
- * Migration tests for 0011–0015.
+ * Migration tests for 0011–0016.
  *
  * These tests use a mock pgm object to capture SQL statements emitted by each
  * migration's up()/down() functions. No live database is required.
@@ -15,6 +15,8 @@ const migration0013 = require('../migrations/0013_password_reset_tokens.js');
 const migration0014 = require('../migrations/0014_session_cleanup_index.js');
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const migration0015 = require('../migrations/0015_assets.js');
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const migration0016 = require('../migrations/0016_asset_verifications.js');
 
 /** Creates a mock pgm object and returns captured SQL strings after calling fn. */
 function captureSql(fn: (pgm: { sql: (s: string) => void }) => void): string[] {
@@ -306,6 +308,62 @@ describe('Migration 0015: assets', () => {
       const typeIdx = sqls.findIndex((s) => s.includes('asset_type_enum'));
       expect(tableIdx).toBeLessThan(statusIdx);
       expect(statusIdx).toBeLessThan(typeIdx);
+    });
+  });
+});
+
+// ─── Migration 0016: asset_verifications ─────────────────────────────────────
+
+describe('Migration 0016: asset_verifications', () => {
+  describe('up', () => {
+    let sqls: string[];
+    beforeEach(() => { sqls = captureSql(migration0016.up); });
+
+    it('creates the verification_decision_enum type', () => {
+      const all = joined(sqls);
+      expect(all).toContain('CREATE TYPE verification_decision_enum AS ENUM');
+      expect(all).toContain('approved');
+      expect(all).toContain('rejected');
+    });
+
+    it('creates the asset_verifications table', () => {
+      expect(joined(sqls)).toContain('CREATE TABLE asset_verifications');
+    });
+
+    it('includes core columns', () => {
+      const all = joined(sqls);
+      expect(all).toContain('id');
+      expect(all).toContain('asset_id');
+      expect(all).toContain('decision');
+      expect(all).toContain('verified_by');
+      expect(all).toContain('notes');
+      expect(all).toContain('created_at');
+    });
+
+    it('references assets(id) and users(id)', () => {
+      const all = joined(sqls);
+      expect(all).toContain('REFERENCES assets(id)');
+      expect(all).toContain('REFERENCES users(id)');
+    });
+
+    it('creates index on asset_id', () => {
+      expect(joined(sqls)).toContain('idx_asset_verifications_asset_id');
+    });
+  });
+
+  describe('down', () => {
+    it('drops the asset_verifications table and enum type', () => {
+      const sqls = captureSql(migration0016.down);
+      const all = joined(sqls);
+      expect(all).toContain('DROP TABLE IF EXISTS asset_verifications');
+      expect(all).toContain('DROP TYPE IF EXISTS verification_decision_enum');
+    });
+
+    it('drops table before type (order matters)', () => {
+      const sqls = captureSql(migration0016.down);
+      const tableIdx = sqls.findIndex((s) => s.includes('DROP TABLE'));
+      const typeIdx = sqls.findIndex((s) => s.includes('verification_decision_enum'));
+      expect(tableIdx).toBeLessThan(typeIdx);
     });
   });
 });

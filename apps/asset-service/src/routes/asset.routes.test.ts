@@ -1,6 +1,6 @@
 import request from 'supertest';
 import { createApp } from '../app';
-import { NotFoundError } from '@libs/errors';
+import { NotFoundError, ValidationError } from '@libs/errors';
 
 jest.mock('@libs/logger', () => ({
   createLogger: jest.fn(() => ({
@@ -35,6 +35,20 @@ const ASSET = {
   updatedAt: new Date('2025-01-01').toISOString(),
 };
 
+const VERIFIER_ID = '770e8400-e29b-41d4-a716-446655440000';
+
+const PENDING_ASSET = { ...ASSET, status: 'pending_verification' };
+const VERIFIED_ASSET = { ...ASSET, status: 'verified' };
+
+const VERIFICATION_RECORD = {
+  id: '880e8400-e29b-41d4-a716-446655440000',
+  assetId: ASSET_ID,
+  decision: 'approved',
+  verifiedBy: VERIFIER_ID,
+  notes: 'Looks good',
+  createdAt: new Date('2025-01-02').toISOString(),
+};
+
 function makeService(opts: {
   create?: jest.Mock;
   findById?: jest.Mock;
@@ -52,8 +66,28 @@ function makeService(opts: {
   };
 }
 
-function makeApp(serviceOpts?: Parameters<typeof makeService>[0]) {
-  return createApp({ assetService: makeService(serviceOpts) as never });
+function makeVerificationService(opts: {
+  submitForVerification?: jest.Mock;
+  approve?: jest.Mock;
+  reject?: jest.Mock;
+  getHistory?: jest.Mock;
+} = {}) {
+  return {
+    submitForVerification: opts.submitForVerification ?? jest.fn().mockResolvedValue(PENDING_ASSET),
+    approve: opts.approve ?? jest.fn().mockResolvedValue(VERIFIED_ASSET),
+    reject: opts.reject ?? jest.fn().mockResolvedValue(ASSET),
+    getHistory: opts.getHistory ?? jest.fn().mockResolvedValue([VERIFICATION_RECORD]),
+  };
+}
+
+function makeApp(
+  serviceOpts?: Parameters<typeof makeService>[0],
+  verificationOpts?: Parameters<typeof makeVerificationService>[0],
+) {
+  return createApp({
+    assetService: makeService(serviceOpts) as never,
+    verificationService: makeVerificationService(verificationOpts) as never,
+  });
 }
 
 // ─── POST /assets ──────────────────────────────────────────────────────────────
@@ -318,6 +352,164 @@ describe('GET /health', () => {
     expect(res.status).toBe(200);
     expect(res.body.status).toBe('healthy');
     expect(res.body.service).toBe('asset-service');
+  });
+});
+
+// ─── POST /assets/:id/submit-verification ───────────────────────────────────────
+
+describe('POST /assets/:id/submit-verification', () => {
+  it('should return 200 with pending asset', async () => {
+    const res = await request(makeApp())
+      .post(`/assets/${ASSET_ID}/submit-verification`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.status).toBe('pending_verification');
+  });
+
+  it('should return 404 when asset not found', async () => {
+    const app = makeApp(undefined, {
+      submitForVerification: jest.fn().mockRejectedValue(new NotFoundError('Asset', 'bad-id')),
+    });
+
+    const res = await request(app).post('/assets/bad-id/submit-verification');
+
+    expect(res.status).toBe(404);
+  });
+
+  it('should return 422 when asset is not in draft status', async () => {
+    const app = makeApp(undefined, {
+      submitForVerification: jest.fn().mockRejectedValue(
+        new ValidationError("Asset must be in 'draft' status to submit for verification"),
+      ),
+    });
+
+    const res = await request(app).post(`/assets/${ASSET_ID}/submit-verification`);
+
+    expect(res.status).toBe(422);
+  });
+});
+
+// ─── POST /assets/:id/approve ───────────────────────────────────────────────────
+
+describe('POST /assets/:id/approve', () => {
+  it('should return 200 with verified asset', async () => {
+    const res = await request(makeApp())
+      .post(`/assets/${ASSET_ID}/approve`)
+      .send({ verifiedBy: VERIFIER_ID });
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.status).toBe('verified');
+  });
+
+  it('should accept optional notes', async () => {
+    const approve = jest.fn().mockResolvedValue(VERIFIED_ASSET);
+    const app = makeApp(undefined, { approve });
+
+    await request(app)
+      .post(`/assets/${ASSET_ID}/approve`)
+      .send({ verifiedBy: VERIFIER_ID, notes: 'All documents checked' });
+
+    expect(approve).toHaveBeenCalledWith(ASSET_ID, VERIFIER_ID, 'All documents checked');
+  });
+
+  it('should return 422 when verifiedBy is missing', async () => {
+    const res = await request(makeApp())
+      .post(`/assets/${ASSET_ID}/approve`)
+      .send({});
+
+    expect(res.status).toBe(422);
+  });
+
+  it('should return 422 when verifiedBy is not a valid UUID', async () => {
+    const res = await request(makeApp())
+      .post(`/assets/${ASSET_ID}/approve`)
+      .send({ verifiedBy: 'not-a-uuid' });
+
+    expect(res.status).toBe(422);
+  });
+
+  it('should return 404 when asset not found', async () => {
+    const app = makeApp(undefined, {
+      approve: jest.fn().mockRejectedValue(new NotFoundError('Asset', 'bad-id')),
+    });
+
+    const res = await request(app)
+      .post('/assets/bad-id/approve')
+      .send({ verifiedBy: VERIFIER_ID });
+
+    expect(res.status).toBe(404);
+  });
+});
+
+// ─── POST /assets/:id/reject ────────────────────────────────────────────────────
+
+describe('POST /assets/:id/reject', () => {
+  it('should return 200 with draft asset after rejection', async () => {
+    const res = await request(makeApp())
+      .post(`/assets/${ASSET_ID}/reject`)
+      .send({ verifiedBy: VERIFIER_ID, notes: 'Missing documentation' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.status).toBe('draft');
+  });
+
+  it('should return 422 when notes are missing', async () => {
+    const res = await request(makeApp())
+      .post(`/assets/${ASSET_ID}/reject`)
+      .send({ verifiedBy: VERIFIER_ID });
+
+    expect(res.status).toBe(422);
+  });
+
+  it('should return 422 when notes are empty string', async () => {
+    const res = await request(makeApp())
+      .post(`/assets/${ASSET_ID}/reject`)
+      .send({ verifiedBy: VERIFIER_ID, notes: '' });
+
+    expect(res.status).toBe(422);
+  });
+
+  it('should return 422 when verifiedBy is missing', async () => {
+    const res = await request(makeApp())
+      .post(`/assets/${ASSET_ID}/reject`)
+      .send({ notes: 'Missing documentation' });
+
+    expect(res.status).toBe(422);
+  });
+
+  it('should return 404 when asset not found', async () => {
+    const app = makeApp(undefined, {
+      reject: jest.fn().mockRejectedValue(new NotFoundError('Asset', 'bad-id')),
+    });
+
+    const res = await request(app)
+      .post('/assets/bad-id/reject')
+      .send({ verifiedBy: VERIFIER_ID, notes: 'Bad asset' });
+
+    expect(res.status).toBe(404);
+  });
+});
+
+// ─── GET /assets/:id/verifications ──────────────────────────────────────────────
+
+describe('GET /assets/:id/verifications', () => {
+  it('should return 200 with verification records', async () => {
+    const res = await request(makeApp())
+      .get(`/assets/${ASSET_ID}/verifications`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data).toHaveLength(1);
+    expect(res.body.data[0].decision).toBe('approved');
+  });
+
+  it('should return 404 when asset not found', async () => {
+    const app = makeApp(undefined, {
+      getHistory: jest.fn().mockRejectedValue(new NotFoundError('Asset', 'bad-id')),
+    });
+
+    const res = await request(app).get('/assets/bad-id/verifications');
+
+    expect(res.status).toBe(404);
   });
 });
 

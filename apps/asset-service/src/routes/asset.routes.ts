@@ -3,6 +3,7 @@ import type { NextFunction, Request, Response } from 'express';
 import { z } from 'zod';
 import { ValidationError } from '@libs/errors';
 import type { AssetService } from '../services/AssetService.js';
+import type { VerificationService } from '../services/VerificationService.js';
 
 const ASSET_TYPES = ['carbon_credit', 'loan_portion'] as const;
 const ASSET_STATUSES = ['draft', 'pending_verification', 'verified', 'minted', 'suspended'] as const;
@@ -40,6 +41,16 @@ const updateSchema = z
     { message: 'At least one field must be provided' },
   );
 
+const approveSchema = z.object({
+  verifiedBy: z.string().uuid('Verified by must be a valid UUID'),
+  notes: z.string().max(5000).optional(),
+});
+
+const rejectSchema = z.object({
+  verifiedBy: z.string().uuid('Verified by must be a valid UUID'),
+  notes: z.string().min(1, 'Notes are required for rejection').max(5000),
+});
+
 const listQuerySchema = z.object({
   assetType: z.enum(ASSET_TYPES).optional(),
   status: z.enum(ASSET_STATUSES).optional(),
@@ -66,7 +77,13 @@ function parseBody<T>(
   return parsed.data;
 }
 
-export function createAssetRouter(service: AssetService): Router {
+export interface AssetRouterDependencies {
+  assetService: AssetService;
+  verificationService: VerificationService;
+}
+
+export function createAssetRouter(deps: AssetRouterDependencies): Router {
+  const { assetService: service, verificationService } = deps;
   const router = Router();
 
   // POST /assets
@@ -121,6 +138,52 @@ export function createAssetRouter(service: AssetService): Router {
 
       const asset = await service.update(req.params['id']!, data);
       res.status(200).json({ data: asset });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // POST /assets/:id/submit-verification
+  router.post('/:id/submit-verification', async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const asset = await verificationService.submitForVerification(req.params['id']!);
+      res.status(200).json({ data: asset });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // POST /assets/:id/approve
+  router.post('/:id/approve', async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const data = parseBody(approveSchema, req.body, next);
+      if (!data) return;
+
+      const asset = await verificationService.approve(req.params['id']!, data.verifiedBy, data.notes);
+      res.status(200).json({ data: asset });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // POST /assets/:id/reject
+  router.post('/:id/reject', async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const data = parseBody(rejectSchema, req.body, next);
+      if (!data) return;
+
+      const asset = await verificationService.reject(req.params['id']!, data.verifiedBy, data.notes);
+      res.status(200).json({ data: asset });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // GET /assets/:id/verifications
+  router.get('/:id/verifications', async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const records = await verificationService.getHistory(req.params['id']!);
+      res.status(200).json({ data: records });
     } catch (err) {
       next(err);
     }

@@ -8,9 +8,11 @@ import { loggingMiddleware } from './middleware/logging.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { createAssetRouter } from './routes/asset.routes.js';
 import type { AssetService } from './services/AssetService.js';
+import type { VerificationService } from './services/VerificationService.js';
 
 export interface AssetAppDependencies {
   assetService: AssetService;
+  verificationService: VerificationService;
   corsOrigins?: string;
 }
 
@@ -37,7 +39,10 @@ export function createApp(deps: AssetAppDependencies): Express {
   app.use(requestIdMiddleware);
   app.use(loggingMiddleware);
 
-  app.use('/assets', createAssetRouter(deps.assetService));
+  app.use('/assets', createAssetRouter({
+    assetService: deps.assetService,
+    verificationService: deps.verificationService,
+  }));
 
   app.get('/health', (_req, res) => {
     res.status(200).json({ status: 'healthy', service: 'asset-service' });

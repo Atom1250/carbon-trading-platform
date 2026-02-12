@@ -141,6 +141,16 @@
 - 46 asset-service tests (17 service + 26 route + health/404), 14 migration tests, 3 gateway proxy tests
 - Commit: `feat(asset): session 3.1 - asset service foundation`
 
+### Session 3.2 — Asset Verification Workflow (`apps/asset-service`)
+
+- **Migration 0016** `asset_verifications` — `verification_decision_enum` (approved, rejected), `asset_verifications` table with asset FK, user FK (verified_by), decision, notes, created_at; index on asset_id
+- `VerificationService` — `submitForVerification(assetId)` transitions draft → pending_verification (ValidationError if not draft), `approve(assetId, verifiedBy, notes?)` transitions pending_verification → verified + inserts approval record, `reject(assetId, verifiedBy, notes)` transitions pending_verification → draft + inserts rejection record (notes required), `getHistory(assetId)` returns all verification records ordered by created_at DESC
+- Routes: `POST /assets/:id/submit-verification` (200), `POST /assets/:id/approve` (200, Zod: verifiedBy UUID required, notes optional), `POST /assets/:id/reject` (200, Zod: verifiedBy UUID + notes required), `GET /assets/:id/verifications` (200)
+- Router refactored from `createAssetRouter(service)` to `createAssetRouter(deps: AssetRouterDependencies)` to accept both AssetService and VerificationService
+- `AssetAppDependencies` extended with `verificationService`
+- 15 VerificationService unit tests, 17 verification route tests, 7 migration tests
+- Commit: `feat(asset): session 3.2 - verification workflow`
+
 ---
 
 ## Current Project Structure
@@ -196,7 +206,7 @@ libs/
   config/src/                   # Zod config (loadConfig, parseCorsOrigins)
   common/src/                   # Shared TS types
   database/src/                 # DatabaseClient + migration tests
-  database/migrations/          # 15 migration files (0001-0015, .js format)
+  database/migrations/          # 16 migration files (0001-0016, .js format)
 apps/
   asset-service/
     src/
@@ -208,6 +218,7 @@ apps/
         asset.routes.ts         # POST/GET/PATCH /assets, GET /assets/:id
       services/
         AssetService.ts         # create, findById, update, list
+        VerificationService.ts  # submitForVerification, approve, reject, getHistory
       types/
         asset.types.ts          # Asset, DTOs, query types
 apps/
@@ -240,12 +251,12 @@ contracts/                      # Standalone Hardhat project (NOT in Nx)
 | logger             | 11    | 100%     |
 | config             | 22    | 100%     |
 | common             | 14    | 100%     |
-| database           | 53    | 100%     |
+| database           | 60    | 100%     |
 | auth-service       | 113   | 100% stmt/fn/line |
 | institution-service| 40    | 100% stmt/fn/line |
-| asset-service      | 46    | 100% stmt/fn/line |
+| asset-service      | 78    | 100% stmt/fn/line |
 | contracts (Hardhat)| 20    | N/A      |
-| **Total**          | **411** |        |
+| **Total**          | **450** |        |
 
 ---
 

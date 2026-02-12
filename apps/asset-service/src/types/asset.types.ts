@@ -55,3 +55,22 @@ export interface AssetListResult {
   assets: Asset[];
   total: number;
 }
+
+export type VerificationDecision = 'approved' | 'rejected';
+
+export interface VerificationRecord {
+  id: string;
+  assetId: string;
+  decision: VerificationDecision;
+  verifiedBy: string;
+  notes: string | null;
+  createdAt: Date;
+}
+
+export interface ApproveAssetDTO {
+  notes?: string;
+}
+
+export interface RejectAssetDTO {
+  notes: string;
+}
