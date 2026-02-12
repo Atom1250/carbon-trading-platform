@@ -16,5 +16,10 @@ export function getServiceRegistry(): Record<string, ServiceConfig> {
       healthPath: '/health',
       timeout: 30_000,
     },
+    assets: {
+      url: process.env['ASSET_SERVICE_URL'] ?? 'http://localhost:3004',
+      healthPath: '/health',
+      timeout: 30_000,
+    },
   };
 }

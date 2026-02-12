@@ -1,5 +1,5 @@
 /**
- * Migration tests for 0011–0014.
+ * Migration tests for 0011–0015.
  *
  * These tests use a mock pgm object to capture SQL statements emitted by each
  * migration's up()/down() functions. No live database is required.
@@ -13,6 +13,8 @@ const migration0012 = require('../migrations/0012_email_verification_tokens.js')
 const migration0013 = require('../migrations/0013_password_reset_tokens.js');
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const migration0014 = require('../migrations/0014_session_cleanup_index.js');
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const migration0015 = require('../migrations/0015_assets.js');
 
 /** Creates a mock pgm object and returns captured SQL strings after calling fn. */
 function captureSql(fn: (pgm: { sql: (s: string) => void }) => void): string[] {
@@ -212,6 +214,98 @@ describe('Migration 0014: session_cleanup_index', () => {
       const all = joined(sqls);
       expect(all).toContain('DROP INDEX IF EXISTS idx_sessions_expires_at_cleanup');
       expect(all).toContain('DROP INDEX IF EXISTS idx_sessions_user_id_active');
+    });
+  });
+});
+
+// ─── Migration 0015: assets ──────────────────────────────────────────────────
+
+describe('Migration 0015: assets', () => {
+  describe('up', () => {
+    let sqls: string[];
+    beforeEach(() => { sqls = captureSql(migration0015.up); });
+
+    it('creates the asset_type_enum type', () => {
+      const all = joined(sqls);
+      expect(all).toContain('CREATE TYPE asset_type_enum AS ENUM');
+      expect(all).toContain('carbon_credit');
+      expect(all).toContain('loan_portion');
+    });
+
+    it('creates the asset_status_enum type', () => {
+      const all = joined(sqls);
+      expect(all).toContain('CREATE TYPE asset_status_enum AS ENUM');
+      expect(all).toContain('draft');
+      expect(all).toContain('pending_verification');
+      expect(all).toContain('verified');
+      expect(all).toContain('minted');
+      expect(all).toContain('suspended');
+    });
+
+    it('creates the assets table', () => {
+      expect(joined(sqls)).toContain('CREATE TABLE assets');
+    });
+
+    it('includes core columns', () => {
+      const all = joined(sqls);
+      expect(all).toContain('id');
+      expect(all).toContain('institution_id');
+      expect(all).toContain('asset_type');
+      expect(all).toContain('name');
+      expect(all).toContain('status');
+      expect(all).toContain('total_supply');
+      expect(all).toContain('available_supply');
+      expect(all).toContain('retired_supply');
+    });
+
+    it('includes blockchain columns', () => {
+      const all = joined(sqls);
+      expect(all).toContain('token_id');
+      expect(all).toContain('minting_tx_hash');
+      expect(all).toContain('minted_at');
+      expect(all).toContain('metadata_uri');
+    });
+
+    it('includes carbon-specific columns', () => {
+      const all = joined(sqls);
+      expect(all).toContain('vintage');
+      expect(all).toContain('standard');
+      expect(all).toContain('geography');
+    });
+
+    it('references institutions(id)', () => {
+      expect(joined(sqls)).toContain('REFERENCES institutions(id)');
+    });
+
+    it('creates index on institution_id', () => {
+      expect(joined(sqls)).toContain('idx_assets_institution_id');
+    });
+
+    it('creates index on asset_type', () => {
+      expect(joined(sqls)).toContain('idx_assets_asset_type');
+    });
+
+    it('creates index on status', () => {
+      expect(joined(sqls)).toContain('idx_assets_status');
+    });
+  });
+
+  describe('down', () => {
+    it('drops the assets table and both enum types', () => {
+      const sqls = captureSql(migration0015.down);
+      const all = joined(sqls);
+      expect(all).toContain('DROP TABLE IF EXISTS assets');
+      expect(all).toContain('DROP TYPE IF EXISTS asset_status_enum');
+      expect(all).toContain('DROP TYPE IF EXISTS asset_type_enum');
+    });
+
+    it('drops table before types (order matters)', () => {
+      const sqls = captureSql(migration0015.down);
+      const tableIdx = sqls.findIndex((s) => s.includes('DROP TABLE'));
+      const statusIdx = sqls.findIndex((s) => s.includes('asset_status_enum'));
+      const typeIdx = sqls.findIndex((s) => s.includes('asset_type_enum'));
+      expect(tableIdx).toBeLessThan(statusIdx);
+      expect(statusIdx).toBeLessThan(typeIdx);
     });
   });
 });

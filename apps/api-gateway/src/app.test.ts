@@ -130,6 +130,7 @@ describe('createApp', () => {
     const serviceRegistry: Record<string, ServiceConfig> = {
       auth: { url: 'http://localhost:3002', healthPath: '/health', timeout: 30_000 },
       institutions: { url: 'http://localhost:3003', healthPath: '/health', timeout: 30_000 },
+      assets: { url: 'http://localhost:3004', healthPath: '/health', timeout: 30_000 },
     };
 
     const proxyApp = createApp({ ...testDeps, serviceRegistry });
@@ -247,6 +248,53 @@ describe('createApp', () => {
           }),
         }),
       );
+    });
+
+    it('should route GET /api/v1/assets to assets service', async () => {
+      mockedAxios.mockResolvedValue({
+        status: 200,
+        data: { data: [{ id: '1', name: 'Green Token' }] },
+        headers: {},
+      });
+
+      const res = await request(proxyApp).get('/api/v1/assets');
+
+      expect(res.status).toBe(200);
+      expect(mockedAxios).toHaveBeenCalledWith(
+        expect.objectContaining({
+          url: 'http://localhost:3004/',
+        }),
+      );
+    });
+
+    it('should route POST /api/v1/assets to assets service', async () => {
+      mockedAxios.mockResolvedValue({
+        status: 201,
+        data: { data: { id: '1' } },
+        headers: {},
+      });
+
+      const res = await request(proxyApp)
+        .post('/api/v1/assets')
+        .send({ name: 'New Token', assetType: 'carbon_credit' });
+
+      expect(res.status).toBe(201);
+      expect(mockedAxios).toHaveBeenCalledWith(
+        expect.objectContaining({
+          url: 'http://localhost:3004/',
+          method: 'POST',
+        }),
+      );
+    });
+
+    it('should return 503 when assets service is down', async () => {
+      const err = new Error('connect ECONNREFUSED');
+      (err as NodeJS.ErrnoException).code = 'ECONNREFUSED';
+      mockedAxios.mockRejectedValue(err);
+
+      const res = await request(proxyApp).get('/api/v1/assets');
+
+      expect(res.status).toBe(503);
     });
 
     it('should not mount proxy routes when serviceRegistry is not provided', async () => {

@@ -131,6 +131,16 @@
 - 113 auth-service tests total, 28 errors tests total, 350 workspace total
 - Commit: `feat(auth): session 2.5 - auth service completion`
 
+### Session 3.1 — Asset Service Foundation (`apps/asset-service`)
+
+- New Nx Express app `apps/asset-service` (port 3004), `createApp(deps)` DI pattern
+- **Migration 0015** `assets` — `asset_type_enum` (carbon_credit, loan_portion), `asset_status_enum` (draft, pending_verification, verified, minted, suspended), assets table with institution FK, blockchain columns (token_id, minting_tx_hash, minted_at, metadata_uri), carbon-specific columns (vintage, standard, geography), supply tracking (total_supply, available_supply, retired_supply as NUMERIC(20,8)), indexes on institution_id/asset_type/status
+- `AssetService` — `create` (sets available_supply = total_supply), `findById` (NotFoundError 404), `update` (name/description/status/vintage/standard/geography/metadataUri), `list` (assetType/status/institutionId filters + limit/offset pagination)
+- Routes: `POST /assets` (201, Zod: institutionId UUID, assetType, name, totalSupply required; description/vintage/standard/geography optional), `GET /assets` (200 + pagination metadata), `GET /assets/:id` (200/404), `PATCH /assets/:id` (200/404/422, at least one field required), `GET /health`
+- API gateway updated: `assets` entry in service registry (port 3004), `/api/v1/assets` proxy route
+- 46 asset-service tests (17 service + 26 route + health/404), 14 migration tests, 3 gateway proxy tests
+- Commit: `feat(asset): session 3.1 - asset service foundation`
+
 ---
 
 ## Current Project Structure
@@ -186,7 +196,20 @@ libs/
   config/src/                   # Zod config (loadConfig, parseCorsOrigins)
   common/src/                   # Shared TS types
   database/src/                 # DatabaseClient + migration tests
-  database/migrations/          # 14 migration files (0001-0014, .js format)
+  database/migrations/          # 15 migration files (0001-0015, .js format)
+apps/
+  asset-service/
+    src/
+      app.ts                    # Express factory (createApp)
+      server.ts                 # Runtime entry
+      index.ts                  # Public API
+      middleware/               # requestId, logging, errorHandler (per-app)
+      routes/
+        asset.routes.ts         # POST/GET/PATCH /assets, GET /assets/:id
+      services/
+        AssetService.ts         # create, findById, update, list
+      types/
+        asset.types.ts          # Asset, DTOs, query types
 apps/
   institution-service/
     src/
@@ -212,16 +235,17 @@ contracts/                      # Standalone Hardhat project (NOT in Nx)
 ## Test Summary (cumulative)
 | Project            | Tests | Coverage |
 |--------------------|-------|----------|
-| api-gateway        | 81    | 100% stmt/fn/line |
+| api-gateway        | 84    | 100% stmt/fn/line |
 | errors             | 28    | 100%     |
 | logger             | 11    | 100%     |
 | config             | 22    | 100%     |
 | common             | 14    | 100%     |
-| database           | 41    | 100%     |
+| database           | 53    | 100%     |
 | auth-service       | 113   | 100% stmt/fn/line |
 | institution-service| 40    | 100% stmt/fn/line |
+| asset-service      | 46    | 100% stmt/fn/line |
 | contracts (Hardhat)| 20    | N/A      |
-| **Total**          | **350** |        |
+| **Total**          | **411** |        |
 
 ---
 
@@ -229,7 +253,7 @@ contracts/                      # Standalone Hardhat project (NOT in Nx)
 - All errors extend `ApplicationError` from `@libs/errors`; error handler uses `isOperationalError()` to decide 500 vs real statusCode
 - CORS: whitelist-only via `parseCorsOrigins()`, never `*`
 - All async Express route handlers: try/catch + `next(err)`, never bare `throw`
-- Commit scopes: `session`, `api-gateway`, `auth`, `database`, `logger`, `errors`, `config`, `common`, `blockchain`, `institution`
+- Commit scopes: `session`, `api-gateway`, `auth`, `database`, `logger`, `errors`, `config`, `common`, `blockchain`, `institution`, `asset`
 - Migration format: `.js` files in `libs/database/migrations/`, using `exports.up = (pgm) => { pgm.sql(...) }`
 - Error classes: use specific subclasses (`NotFoundError`, `ConflictError`, `AuthenticationError`, etc.) not `ApplicationError` with statusCode options
 - No `errorHandler` in `@libs/errors` — lives in each app's own `src/middleware/errorHandler.ts`

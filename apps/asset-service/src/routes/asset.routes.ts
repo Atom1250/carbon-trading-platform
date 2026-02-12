@@ -1,0 +1,130 @@
+import { Router } from 'express';
+import type { NextFunction, Request, Response } from 'express';
+import { z } from 'zod';
+import { ValidationError } from '@libs/errors';
+import type { AssetService } from '../services/AssetService.js';
+
+const ASSET_TYPES = ['carbon_credit', 'loan_portion'] as const;
+const ASSET_STATUSES = ['draft', 'pending_verification', 'verified', 'minted', 'suspended'] as const;
+
+const createSchema = z.object({
+  institutionId: z.string().uuid('Institution ID must be a valid UUID'),
+  assetType: z.enum(ASSET_TYPES),
+  name: z.string().min(1, 'Name is required').max(255),
+  description: z.string().max(5000).optional(),
+  vintage: z.number().int().min(1900).max(2100).optional(),
+  standard: z.string().max(100).optional(),
+  geography: z.string().max(100).optional(),
+  totalSupply: z.number().positive('Total supply must be positive'),
+});
+
+const updateSchema = z
+  .object({
+    name: z.string().min(1).max(255).optional(),
+    description: z.string().max(5000).optional(),
+    status: z.enum(ASSET_STATUSES).optional(),
+    vintage: z.number().int().min(1900).max(2100).optional(),
+    standard: z.string().max(100).optional(),
+    geography: z.string().max(100).optional(),
+    metadataUri: z.string().max(500).optional(),
+  })
+  .refine(
+    (d) =>
+      d.name !== undefined ||
+      d.description !== undefined ||
+      d.status !== undefined ||
+      d.vintage !== undefined ||
+      d.standard !== undefined ||
+      d.geography !== undefined ||
+      d.metadataUri !== undefined,
+    { message: 'At least one field must be provided' },
+  );
+
+const listQuerySchema = z.object({
+  assetType: z.enum(ASSET_TYPES).optional(),
+  status: z.enum(ASSET_STATUSES).optional(),
+  institutionId: z.string().uuid().optional(),
+  limit: z.coerce.number().int().min(1).max(100).default(20),
+  offset: z.coerce.number().int().min(0).default(0),
+});
+
+function parseBody<T>(
+  schema: z.ZodType<T>,
+  body: unknown,
+  next: NextFunction,
+): T | null {
+  const parsed = schema.safeParse(body);
+  if (!parsed.success) {
+    const errors = parsed.error.issues.map((i) => ({
+      field: i.path.join('.'),
+      message: i.message,
+      code: i.code,
+    }));
+    next(new ValidationError('Validation failed', errors));
+    return null;
+  }
+  return parsed.data;
+}
+
+export function createAssetRouter(service: AssetService): Router {
+  const router = Router();
+
+  // POST /assets
+  router.post('/', async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const data = parseBody(createSchema, req.body, next);
+      if (!data) return;
+
+      const asset = await service.create(data);
+      res.status(201).json({ data: asset });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // GET /assets
+  router.get('/', async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const query = parseBody(listQuerySchema, req.query, next);
+      if (!query) return;
+
+      const result = await service.list(query);
+      res.status(200).json({
+        data: result.assets,
+        metadata: {
+          total: result.total,
+          limit: query.limit,
+          offset: query.offset,
+          hasMore: query.offset + query.limit < result.total,
+        },
+      });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // GET /assets/:id
+  router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const asset = await service.findById(req.params['id']!);
+      res.status(200).json({ data: asset });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // PATCH /assets/:id
+  router.patch('/:id', async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const data = parseBody(updateSchema, req.body, next);
+      if (!data) return;
+
+      const asset = await service.update(req.params['id']!, data);
+      res.status(200).json({ data: asset });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  return router;
+}
