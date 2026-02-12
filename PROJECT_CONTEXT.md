@@ -119,6 +119,18 @@
 - 81 api-gateway tests total, 313 workspace total
 - Commit: `feat(api-gateway): session 2.4 - gateway routing`
 
+### Session 2.5 — Auth Service Completion (`apps/auth-service` + `libs/errors`)
+
+- `RateLimitError` added to `@libs/errors` — extends `ApplicationError` with `statusCode: 429` and `retryAfterSeconds` property; 429 slug/title added to both auth-service and api-gateway `errorHandler.ts`
+- `PasswordResetService` — `requestReset(email, ipAddress, userAgent)` generates crypto token (32 bytes hex), inserts into `password_reset_tokens` with 1-hour expiry; always returns `{ success: true }` (no email existence leak). `resetPassword(token, newPassword)` validates token (exists, not used, not expired), hashes password with bcrypt (12 rounds), updates user, marks token used, deletes all user sessions
+- `LoginAttemptService` — `trackAttempt(email, ipAddress, userAgent, success, failureReason)` inserts into `login_attempts` table. `checkRateLimit(email, ipAddress, maxAttempts, windowMinutes)` counts failed attempts only (`success = FALSE`) for email OR ip in window; throws `RateLimitError` when at/over limit
+- `SessionCleanupService` — `cleanup()` deletes expired sessions (returns count), `startSchedule(intervalMinutes)` runs immediately then on interval, `stopSchedule()` clears interval
+- Routes: `POST /auth/forgot-password` (rate limit 3/15min, always 200), `POST /auth/reset-password` (validates token + Zod password strength); login route now checks rate limit (5 failed/15min) and tracks all attempts
+- Auth router refactored from positional args to `AuthRouterDependencies` deps object
+- 37 new tests (10 PasswordResetService + 9 LoginAttemptService + 5 SessionCleanupService + 11 route + 3 RateLimitError in errors lib — minus 1 folded into existing)
+- 113 auth-service tests total, 28 errors tests total, 350 workspace total
+- Commit: `feat(auth): session 2.5 - auth service completion`
+
 ---
 
 ## Current Project Structure
@@ -155,15 +167,18 @@ apps/
         logging.ts              # HTTP access log
         errorHandler.ts         # RFC 7807 error handler
       routes/
-        auth.routes.ts          # login, refresh, logout, mfa/verify, register, verify-email
+        auth.routes.ts          # login, refresh, logout, register, verify-email, forgot-password, reset-password
         mfa.routes.ts           # mfa/setup, mfa/enable
       services/
         AuthService.ts          # login, refresh, logout, verifyMFA
         TokenService.ts         # JWT access/refresh generation + verification
         MFAService.ts           # TOTP setup, verify, enable
         RegistrationService.ts  # register, verifyEmail
+        PasswordResetService.ts # requestReset, resetPassword
+        LoginAttemptService.ts  # trackAttempt, checkRateLimit
+        SessionCleanupService.ts # cleanup, startSchedule, stopSchedule
       types/
-        auth.types.ts           # TokenPayload, UserRow, SafeUser, RegisterInput, etc.
+        auth.types.ts           # TokenPayload, UserRow, SafeUser, RegisterInput, PasswordResetTokenRow, etc.
         express.d.ts            # Augments Request with user, requestId
 libs/
   logger/src/                   # createLogger(service) → ILogger
@@ -198,15 +213,15 @@ contracts/                      # Standalone Hardhat project (NOT in Nx)
 | Project            | Tests | Coverage |
 |--------------------|-------|----------|
 | api-gateway        | 81    | 100% stmt/fn/line |
-| errors             | 25    | 100%     |
+| errors             | 28    | 100%     |
 | logger             | 11    | 100%     |
 | config             | 22    | 100%     |
 | common             | 14    | 100%     |
 | database           | 41    | 100%     |
-| auth-service       | 79    | 100% stmt/fn/line |
+| auth-service       | 113   | 100% stmt/fn/line |
 | institution-service| 40    | 100% stmt/fn/line |
 | contracts (Hardhat)| 20    | N/A      |
-| **Total**          | **313** |        |
+| **Total**          | **350** |        |
 
 ---
 

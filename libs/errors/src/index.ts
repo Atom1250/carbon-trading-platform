@@ -6,6 +6,7 @@ export {
   AuthenticationError,
   AuthorizationError,
   ConflictError,
+  RateLimitError,
   ServiceUnavailableError,
   isOperationalError,
 } from './errors.js';

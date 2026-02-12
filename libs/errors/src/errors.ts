@@ -94,6 +94,19 @@ export class ConflictError extends ApplicationError {
 }
 
 /**
+ * Thrown when a client exceeds the allowed request rate.
+ * HTTP 429 Too Many Requests.
+ */
+export class RateLimitError extends ApplicationError {
+  public readonly retryAfterSeconds: number;
+
+  constructor(message = 'Too many requests', retryAfterSeconds = 900) {
+    super(message, { statusCode: 429 });
+    this.retryAfterSeconds = retryAfterSeconds;
+  }
+}
+
+/**
  * Thrown when a dependency (DB, Redis, external service) is unavailable.
  * HTTP 503 Service Unavailable.
  */

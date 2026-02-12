@@ -19,6 +19,7 @@ function toTypeUri(statusCode: number): string {
     404: 'not-found',
     409: 'conflict',
     422: 'validation-error',
+    429: 'rate-limit-exceeded',
     500: 'internal-server-error',
     503: 'service-unavailable',
   };
@@ -33,6 +34,7 @@ function toTitle(statusCode: number): string {
     404: 'Not Found',
     409: 'Conflict',
     422: 'Validation Error',
+    429: 'Too Many Requests',
     500: 'Internal Server Error',
     503: 'Service Unavailable',
   };

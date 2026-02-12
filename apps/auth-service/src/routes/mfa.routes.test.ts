@@ -52,13 +52,23 @@ function makeServices(opts: {
     verifyEmail: jest.fn(),
   };
 
-  return { tokenService, mfaService, authService, registrationService };
+  const passwordResetService = {
+    requestReset: jest.fn(),
+    resetPassword: jest.fn(),
+  };
+
+  const loginAttemptService = {
+    checkRateLimit: jest.fn(),
+    trackAttempt: jest.fn(),
+  };
+
+  return { tokenService, mfaService, authService, registrationService, passwordResetService, loginAttemptService };
 }
 
 describe('POST /auth/mfa/setup', () => {
   it('should return 200 with secret and QR code for authenticated user', async () => {
-    const { tokenService, mfaService, authService, registrationService } = makeServices();
-    const app = createApp({ authService: authService as never, tokenService: tokenService as never, mfaService: mfaService as never, registrationService: registrationService as never });
+    const { tokenService, mfaService, authService, registrationService, passwordResetService, loginAttemptService } = makeServices();
+    const app = createApp({ authService: authService as never, tokenService: tokenService as never, mfaService: mfaService as never, registrationService: registrationService as never, passwordResetService: passwordResetService as never, loginAttemptService: loginAttemptService as never });
 
     const res = await request(app)
       .post('/auth/mfa/setup')
@@ -71,8 +81,8 @@ describe('POST /auth/mfa/setup', () => {
   });
 
   it('should return 401 when no Authorization header is provided', async () => {
-    const { tokenService, mfaService, authService, registrationService } = makeServices();
-    const app = createApp({ authService: authService as never, tokenService: tokenService as never, mfaService: mfaService as never, registrationService: registrationService as never });
+    const { tokenService, mfaService, authService, registrationService, passwordResetService, loginAttemptService } = makeServices();
+    const app = createApp({ authService: authService as never, tokenService: tokenService as never, mfaService: mfaService as never, registrationService: registrationService as never, passwordResetService: passwordResetService as never, loginAttemptService: loginAttemptService as never });
 
     const res = await request(app).post('/auth/mfa/setup');
 
@@ -80,12 +90,12 @@ describe('POST /auth/mfa/setup', () => {
   });
 
   it('should return 401 when token is invalid', async () => {
-    const { tokenService, mfaService, authService, registrationService } = makeServices({
+    const { tokenService, mfaService, authService, registrationService, passwordResetService, loginAttemptService } = makeServices({
       verifyAccessToken: jest.fn().mockImplementation(() => {
         throw new AuthenticationError('Invalid token');
       }),
     });
-    const app = createApp({ authService: authService as never, tokenService: tokenService as never, mfaService: mfaService as never, registrationService: registrationService as never });
+    const app = createApp({ authService: authService as never, tokenService: tokenService as never, mfaService: mfaService as never, registrationService: registrationService as never, passwordResetService: passwordResetService as never, loginAttemptService: loginAttemptService as never });
 
     const res = await request(app)
       .post('/auth/mfa/setup')
@@ -97,8 +107,8 @@ describe('POST /auth/mfa/setup', () => {
 
 describe('POST /auth/mfa/enable', () => {
   it('should return 200 on successful enable', async () => {
-    const { tokenService, mfaService, authService, registrationService } = makeServices();
-    const app = createApp({ authService: authService as never, tokenService: tokenService as never, mfaService: mfaService as never, registrationService: registrationService as never });
+    const { tokenService, mfaService, authService, registrationService, passwordResetService, loginAttemptService } = makeServices();
+    const app = createApp({ authService: authService as never, tokenService: tokenService as never, mfaService: mfaService as never, registrationService: registrationService as never, passwordResetService: passwordResetService as never, loginAttemptService: loginAttemptService as never });
 
     const res = await request(app)
       .post('/auth/mfa/enable')
@@ -111,8 +121,8 @@ describe('POST /auth/mfa/enable', () => {
   });
 
   it('should return 422 when token is not 6 digits', async () => {
-    const { tokenService, mfaService, authService, registrationService } = makeServices();
-    const app = createApp({ authService: authService as never, tokenService: tokenService as never, mfaService: mfaService as never, registrationService: registrationService as never });
+    const { tokenService, mfaService, authService, registrationService, passwordResetService, loginAttemptService } = makeServices();
+    const app = createApp({ authService: authService as never, tokenService: tokenService as never, mfaService: mfaService as never, registrationService: registrationService as never, passwordResetService: passwordResetService as never, loginAttemptService: loginAttemptService as never });
 
     const res = await request(app)
       .post('/auth/mfa/enable')
@@ -123,10 +133,10 @@ describe('POST /auth/mfa/enable', () => {
   });
 
   it('should return 401 when MFA code is wrong', async () => {
-    const { tokenService, mfaService, authService, registrationService } = makeServices({
+    const { tokenService, mfaService, authService, registrationService, passwordResetService, loginAttemptService } = makeServices({
       enable: jest.fn().mockRejectedValue(new AuthenticationError('Invalid MFA code')),
     });
-    const app = createApp({ authService: authService as never, tokenService: tokenService as never, mfaService: mfaService as never, registrationService: registrationService as never });
+    const app = createApp({ authService: authService as never, tokenService: tokenService as never, mfaService: mfaService as never, registrationService: registrationService as never, passwordResetService: passwordResetService as never, loginAttemptService: loginAttemptService as never });
 
     const res = await request(app)
       .post('/auth/mfa/enable')

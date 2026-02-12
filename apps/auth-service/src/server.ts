@@ -6,6 +6,9 @@ import { TokenService } from './services/TokenService.js';
 import { AuthService } from './services/AuthService.js';
 import { MFAService } from './services/MFAService.js';
 import { RegistrationService } from './services/RegistrationService.js';
+import { PasswordResetService } from './services/PasswordResetService.js';
+import { LoginAttemptService } from './services/LoginAttemptService.js';
+import { SessionCleanupService } from './services/SessionCleanupService.js';
 
 const logger = createLogger('auth-service');
 
@@ -17,14 +20,22 @@ async function main(): Promise<void> {
   const mfaService = new MFAService(db);
   const authService = new AuthService(db, tokenService, mfaService);
   const registrationService = new RegistrationService(db);
+  const passwordResetService = new PasswordResetService(db);
+  const loginAttemptService = new LoginAttemptService(db);
+  const sessionCleanupService = new SessionCleanupService(db);
 
   const app = createApp({
     tokenService,
     authService,
     mfaService,
     registrationService,
+    passwordResetService,
+    loginAttemptService,
     corsOrigins: config.CORS_ORIGINS,
   });
+
+  // Start session cleanup job (runs every 60 minutes)
+  sessionCleanupService.startSchedule(60);
 
   const server = app.listen(config.PORT, () => {
     logger.info('Auth Service started', {

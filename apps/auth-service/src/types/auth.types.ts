@@ -79,3 +79,13 @@ export interface InstitutionCheckRow {
   id: string;
   status: string;
 }
+
+export interface PasswordResetTokenRow {
+  user_id: string;
+  expires_at: string;
+  used_at: string | null;
+}
+
+export interface LoginAttemptRow {
+  count: string;
+}

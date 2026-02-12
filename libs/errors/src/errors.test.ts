@@ -5,6 +5,7 @@ import {
   ConflictError,
   DatabaseError,
   NotFoundError,
+  RateLimitError,
   ServiceUnavailableError,
   ValidationError,
   isOperationalError,
@@ -136,6 +137,27 @@ describe('ConflictError', () => {
   });
 });
 
+describe('RateLimitError', () => {
+  it('should have statusCode 429 and default message', () => {
+    const err = new RateLimitError();
+    expect(err.statusCode).toBe(429);
+    expect(err.message).toBe('Too many requests');
+    expect(err.name).toBe('RateLimitError');
+    expect(err instanceof ApplicationError).toBe(true);
+  });
+
+  it('should accept custom message and retryAfterSeconds', () => {
+    const err = new RateLimitError('Slow down', 60);
+    expect(err.message).toBe('Slow down');
+    expect(err.retryAfterSeconds).toBe(60);
+  });
+
+  it('should default retryAfterSeconds to 900', () => {
+    const err = new RateLimitError();
+    expect(err.retryAfterSeconds).toBe(900);
+  });
+});
+
 describe('ServiceUnavailableError', () => {
   it('should have statusCode 503', () => {
     const err = new ServiceUnavailableError('redis');
@@ -180,5 +202,6 @@ describe('isOperationalError', () => {
     expect(isOperationalError(new ConflictError('c'))).toBe(true);
     expect(isOperationalError(new DatabaseError('d'))).toBe(true);
     expect(isOperationalError(new ServiceUnavailableError('s'))).toBe(true);
+    expect(isOperationalError(new RateLimitError())).toBe(true);
   });
 });
