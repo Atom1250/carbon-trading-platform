@@ -10,11 +10,15 @@ import { createAssetRouter } from './routes/asset.routes.js';
 import type { AssetService } from './services/AssetService.js';
 import type { VerificationService } from './services/VerificationService.js';
 import type { BlockchainService } from './services/BlockchainService.js';
+import type { MintingService } from './services/MintingService.js';
+import type { RetirementService } from './services/RetirementService.js';
 
 export interface AssetAppDependencies {
   assetService: AssetService;
   verificationService: VerificationService;
   blockchainService?: BlockchainService;
+  mintingService: MintingService;
+  retirementService: RetirementService;
   corsOrigins?: string;
 }
 
@@ -44,6 +48,8 @@ export function createApp(deps: AssetAppDependencies): Express {
   app.use('/assets', createAssetRouter({
     assetService: deps.assetService,
     verificationService: deps.verificationService,
+    mintingService: deps.mintingService,
+    retirementService: deps.retirementService,
   }));
 
   app.get('/health', (_req, res) => {

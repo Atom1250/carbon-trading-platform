@@ -1,6 +1,6 @@
 import request from 'supertest';
 import { createApp } from '../app';
-import { NotFoundError, ValidationError } from '@libs/errors';
+import { NotFoundError, ValidationError, ServiceUnavailableError } from '@libs/errors';
 
 jest.mock('@libs/logger', () => ({
   createLogger: jest.fn(() => ({
@@ -37,8 +37,13 @@ const ASSET = {
 
 const VERIFIER_ID = '770e8400-e29b-41d4-a716-446655440000';
 
+const USER_ID = '990e8400-e29b-41d4-a716-446655440000';
+const RECIPIENT_ADDRESS = '0x70997970C51812dc3A010C7d01b50e0d17dc79C8';
+const TX_HASH = '0xabc123def456789012345678901234567890123456789012345678901234abcd';
+
 const PENDING_ASSET = { ...ASSET, status: 'pending_verification' };
 const VERIFIED_ASSET = { ...ASSET, status: 'verified' };
+const MINTED_ASSET = { ...ASSET, status: 'minted', tokenId: '123456', mintingTxHash: TX_HASH };
 
 const VERIFICATION_RECORD = {
   id: '880e8400-e29b-41d4-a716-446655440000',
@@ -80,13 +85,45 @@ function makeVerificationService(opts: {
   };
 }
 
+const RETIREMENT_RECORD = {
+  id: 'aa0e8400-e29b-41d4-a716-446655440000',
+  assetId: ASSET_ID,
+  amount: '1000.00000000',
+  retiredByUserId: USER_ID,
+  reason: 'Carbon offset',
+  transactionHash: TX_HASH,
+  createdAt: new Date('2025-01-03').toISOString(),
+};
+
+function makeMintingService(opts: {
+  mintAssetTokens?: jest.Mock;
+} = {}) {
+  return {
+    mintAssetTokens: opts.mintAssetTokens ?? jest.fn().mockResolvedValue({ tokenId: '123456', txHash: TX_HASH }),
+  };
+}
+
+function makeRetirementService(opts: {
+  retire?: jest.Mock;
+  getHistory?: jest.Mock;
+} = {}) {
+  return {
+    retire: opts.retire ?? jest.fn().mockResolvedValue({ txHash: TX_HASH, amount: 1000 }),
+    getHistory: opts.getHistory ?? jest.fn().mockResolvedValue([RETIREMENT_RECORD]),
+  };
+}
+
 function makeApp(
   serviceOpts?: Parameters<typeof makeService>[0],
   verificationOpts?: Parameters<typeof makeVerificationService>[0],
+  mintingOpts?: Parameters<typeof makeMintingService>[0],
+  retirementOpts?: Parameters<typeof makeRetirementService>[0],
 ) {
   return createApp({
     assetService: makeService(serviceOpts) as never,
     verificationService: makeVerificationService(verificationOpts) as never,
+    mintingService: makeMintingService(mintingOpts) as never,
+    retirementService: makeRetirementService(retirementOpts) as never,
   });
 }
 
@@ -508,6 +545,160 @@ describe('GET /assets/:id/verifications', () => {
     });
 
     const res = await request(app).get('/assets/bad-id/verifications');
+
+    expect(res.status).toBe(404);
+  });
+});
+
+// ─── POST /assets/:id/mint ───────────────────────────────────────────────────
+
+describe('POST /assets/:id/mint', () => {
+  it('should return 200 with tokenId and txHash', async () => {
+    const res = await request(makeApp())
+      .post(`/assets/${ASSET_ID}/mint`)
+      .send({ recipientAddress: RECIPIENT_ADDRESS });
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.tokenId).toBe('123456');
+    expect(res.body.data.txHash).toBe(TX_HASH);
+  });
+
+  it('should pass correct args to mintingService', async () => {
+    const mintAssetTokens = jest.fn().mockResolvedValue({ tokenId: '123', txHash: TX_HASH });
+    const app = makeApp(undefined, undefined, { mintAssetTokens });
+
+    await request(app)
+      .post(`/assets/${ASSET_ID}/mint`)
+      .send({ recipientAddress: RECIPIENT_ADDRESS });
+
+    expect(mintAssetTokens).toHaveBeenCalledWith(ASSET_ID, RECIPIENT_ADDRESS);
+  });
+
+  it('should return 422 when recipientAddress is missing', async () => {
+    const res = await request(makeApp())
+      .post(`/assets/${ASSET_ID}/mint`)
+      .send({});
+
+    expect(res.status).toBe(422);
+  });
+
+  it('should return 404 when asset not found', async () => {
+    const app = makeApp(undefined, undefined, {
+      mintAssetTokens: jest.fn().mockRejectedValue(new NotFoundError('Asset', 'bad-id')),
+    });
+
+    const res = await request(app)
+      .post('/assets/bad-id/mint')
+      .send({ recipientAddress: RECIPIENT_ADDRESS });
+
+    expect(res.status).toBe(404);
+  });
+
+  it('should return 422 when asset is not in verified status', async () => {
+    const app = makeApp(undefined, undefined, {
+      mintAssetTokens: jest.fn().mockRejectedValue(
+        new ValidationError("Asset must be in 'verified' status to mint"),
+      ),
+    });
+
+    const res = await request(app)
+      .post(`/assets/${ASSET_ID}/mint`)
+      .send({ recipientAddress: RECIPIENT_ADDRESS });
+
+    expect(res.status).toBe(422);
+  });
+});
+
+// ─── POST /assets/:id/retire ────────────────────────────────────────────────
+
+describe('POST /assets/:id/retire', () => {
+  it('should return 200 with txHash and amount', async () => {
+    const res = await request(makeApp())
+      .post(`/assets/${ASSET_ID}/retire`)
+      .send({ amount: 1000, userId: USER_ID, reason: 'Carbon offset' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.txHash).toBe(TX_HASH);
+    expect(res.body.data.amount).toBe(1000);
+  });
+
+  it('should return 422 when amount is missing', async () => {
+    const res = await request(makeApp())
+      .post(`/assets/${ASSET_ID}/retire`)
+      .send({ userId: USER_ID, reason: 'Carbon offset' });
+
+    expect(res.status).toBe(422);
+  });
+
+  it('should return 422 when userId is not a valid UUID', async () => {
+    const res = await request(makeApp())
+      .post(`/assets/${ASSET_ID}/retire`)
+      .send({ amount: 100, userId: 'not-a-uuid', reason: 'Offset' });
+
+    expect(res.status).toBe(422);
+  });
+
+  it('should return 422 when reason is missing', async () => {
+    const res = await request(makeApp())
+      .post(`/assets/${ASSET_ID}/retire`)
+      .send({ amount: 100, userId: USER_ID });
+
+    expect(res.status).toBe(422);
+  });
+
+  it('should return 422 when amount is zero or negative', async () => {
+    const res = await request(makeApp())
+      .post(`/assets/${ASSET_ID}/retire`)
+      .send({ amount: 0, userId: USER_ID, reason: 'Offset' });
+
+    expect(res.status).toBe(422);
+  });
+
+  it('should return 404 when asset not found', async () => {
+    const app = makeApp(undefined, undefined, undefined, {
+      retire: jest.fn().mockRejectedValue(new NotFoundError('Asset', 'bad-id')),
+    });
+
+    const res = await request(app)
+      .post('/assets/bad-id/retire')
+      .send({ amount: 100, userId: USER_ID, reason: 'Offset' });
+
+    expect(res.status).toBe(404);
+  });
+
+  it('should return 422 when asset is not carbon_credit', async () => {
+    const app = makeApp(undefined, undefined, undefined, {
+      retire: jest.fn().mockRejectedValue(
+        new ValidationError('Only carbon credits can be retired'),
+      ),
+    });
+
+    const res = await request(app)
+      .post(`/assets/${ASSET_ID}/retire`)
+      .send({ amount: 100, userId: USER_ID, reason: 'Offset' });
+
+    expect(res.status).toBe(422);
+  });
+});
+
+// ─── GET /assets/:id/retirements ─────────────────────────────────────────────
+
+describe('GET /assets/:id/retirements', () => {
+  it('should return 200 with retirement records', async () => {
+    const res = await request(makeApp())
+      .get(`/assets/${ASSET_ID}/retirements`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data).toHaveLength(1);
+    expect(res.body.data[0].transactionHash).toBe(TX_HASH);
+  });
+
+  it('should return 404 when asset not found', async () => {
+    const app = makeApp(undefined, undefined, undefined, {
+      getHistory: jest.fn().mockRejectedValue(new NotFoundError('Asset', 'bad-id')),
+    });
+
+    const res = await request(app).get('/assets/bad-id/retirements');
 
     expect(res.status).toBe(404);
   });

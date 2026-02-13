@@ -4,6 +4,8 @@ import { z } from 'zod';
 import { ValidationError } from '@libs/errors';
 import type { AssetService } from '../services/AssetService.js';
 import type { VerificationService } from '../services/VerificationService.js';
+import type { MintingService } from '../services/MintingService.js';
+import type { RetirementService } from '../services/RetirementService.js';
 
 const ASSET_TYPES = ['carbon_credit', 'loan_portion'] as const;
 const ASSET_STATUSES = ['draft', 'pending_verification', 'verified', 'minted', 'suspended'] as const;
@@ -59,6 +61,16 @@ const listQuerySchema = z.object({
   offset: z.coerce.number().int().min(0).default(0),
 });
 
+const mintSchema = z.object({
+  recipientAddress: z.string().min(1, 'Recipient address is required'),
+});
+
+const retireSchema = z.object({
+  amount: z.number().positive('Amount must be positive'),
+  userId: z.string().uuid('User ID must be a valid UUID'),
+  reason: z.string().min(1, 'Reason is required').max(5000),
+});
+
 function parseBody<T>(
   schema: z.ZodType<T>,
   body: unknown,
@@ -80,10 +92,12 @@ function parseBody<T>(
 export interface AssetRouterDependencies {
   assetService: AssetService;
   verificationService: VerificationService;
+  mintingService: MintingService;
+  retirementService: RetirementService;
 }
 
 export function createAssetRouter(deps: AssetRouterDependencies): Router {
-  const { assetService: service, verificationService } = deps;
+  const { assetService: service, verificationService, mintingService, retirementService } = deps;
   const router = Router();
 
   // POST /assets
@@ -183,6 +197,42 @@ export function createAssetRouter(deps: AssetRouterDependencies): Router {
   router.get('/:id/verifications', async (req: Request, res: Response, next: NextFunction) => {
     try {
       const records = await verificationService.getHistory(req.params['id']!);
+      res.status(200).json({ data: records });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // POST /assets/:id/mint
+  router.post('/:id/mint', async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const data = parseBody(mintSchema, req.body, next);
+      if (!data) return;
+
+      const result = await mintingService.mintAssetTokens(req.params['id']!, data.recipientAddress);
+      res.status(200).json({ data: result });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // POST /assets/:id/retire
+  router.post('/:id/retire', async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const data = parseBody(retireSchema, req.body, next);
+      if (!data) return;
+
+      const result = await retirementService.retire(req.params['id']!, data.amount, data.userId, data.reason);
+      res.status(200).json({ data: result });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // GET /assets/:id/retirements
+  router.get('/:id/retirements', async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const records = await retirementService.getHistory(req.params['id']!);
       res.status(200).json({ data: records });
     } catch (err) {
       next(err);

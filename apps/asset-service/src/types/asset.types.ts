@@ -88,3 +88,19 @@ export interface MintResult {
 export interface BurnResult {
   txHash: string;
 }
+
+export interface Retirement {
+  id: string;
+  assetId: string;
+  amount: string;
+  retiredByUserId: string;
+  reason: string | null;
+  transactionHash: string;
+  createdAt: Date;
+}
+
+export interface RetireAssetDTO {
+  amount: number;
+  userId: string;
+  reason: string;
+}

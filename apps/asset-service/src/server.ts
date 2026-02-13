@@ -5,6 +5,8 @@ import { createApp } from './app.js';
 import { AssetService } from './services/AssetService.js';
 import { VerificationService } from './services/VerificationService.js';
 import { BlockchainService } from './services/BlockchainService.js';
+import { MintingService } from './services/MintingService.js';
+import { RetirementService } from './services/RetirementService.js';
 
 const logger = createLogger('asset-service');
 
@@ -27,7 +29,17 @@ if (blockchainService) {
   logger.warn('Blockchain service not configured — minting/retirement will be unavailable');
 }
 
-const app = createApp({ assetService, verificationService, blockchainService, corsOrigins: config.CORS_ORIGINS });
+const mintingService = blockchainService ? new MintingService(db, blockchainService) : undefined;
+const retirementService = blockchainService ? new RetirementService(db, blockchainService) : undefined;
+
+const app = createApp({
+  assetService,
+  verificationService,
+  blockchainService,
+  mintingService: mintingService as never,
+  retirementService: retirementService as never,
+  corsOrigins: config.CORS_ORIGINS,
+});
 const port = config.PORT ?? 3004;
 
 app.listen(port, () => {

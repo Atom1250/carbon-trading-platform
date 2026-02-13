@@ -1,5 +1,5 @@
 /**
- * Migration tests for 0011–0016.
+ * Migration tests for 0011–0017.
  *
  * These tests use a mock pgm object to capture SQL statements emitted by each
  * migration's up()/down() functions. No live database is required.
@@ -17,6 +17,8 @@ const migration0014 = require('../migrations/0014_session_cleanup_index.js');
 const migration0015 = require('../migrations/0015_assets.js');
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const migration0016 = require('../migrations/0016_asset_verifications.js');
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const migration0017 = require('../migrations/0017_asset_retirements.js');
 
 /** Creates a mock pgm object and returns captured SQL strings after calling fn. */
 function captureSql(fn: (pgm: { sql: (s: string) => void }) => void): string[] {
@@ -364,6 +366,52 @@ describe('Migration 0016: asset_verifications', () => {
       const tableIdx = sqls.findIndex((s) => s.includes('DROP TABLE'));
       const typeIdx = sqls.findIndex((s) => s.includes('verification_decision_enum'));
       expect(tableIdx).toBeLessThan(typeIdx);
+    });
+  });
+});
+
+// ─── Migration 0017: asset_retirements ───────────────────────────────────────
+
+describe('Migration 0017: asset_retirements', () => {
+  describe('up', () => {
+    let sqls: string[];
+    beforeEach(() => { sqls = captureSql(migration0017.up); });
+
+    it('creates the asset_retirements table', () => {
+      expect(joined(sqls)).toContain('CREATE TABLE asset_retirements');
+    });
+
+    it('includes core columns', () => {
+      const all = joined(sqls);
+      expect(all).toContain('id');
+      expect(all).toContain('asset_id');
+      expect(all).toContain('amount');
+      expect(all).toContain('retired_by_user_id');
+      expect(all).toContain('reason');
+      expect(all).toContain('transaction_hash');
+      expect(all).toContain('created_at');
+    });
+
+    it('references assets(id) and users(id)', () => {
+      const all = joined(sqls);
+      expect(all).toContain('REFERENCES assets(id)');
+      expect(all).toContain('REFERENCES users(id)');
+    });
+
+    it('creates index on asset_id', () => {
+      expect(joined(sqls)).toContain('idx_asset_retirements_asset_id');
+    });
+
+    it('creates index on retired_by_user_id', () => {
+      expect(joined(sqls)).toContain('idx_asset_retirements_user_id');
+    });
+  });
+
+  describe('down', () => {
+    it('drops the asset_retirements table', () => {
+      const sqls = captureSql(migration0017.down);
+      const all = joined(sqls);
+      expect(all).toContain('DROP TABLE IF EXISTS asset_retirements');
     });
   });
 });
