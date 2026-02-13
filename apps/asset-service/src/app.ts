@@ -9,10 +9,12 @@ import { errorHandler } from './middleware/errorHandler.js';
 import { createAssetRouter } from './routes/asset.routes.js';
 import type { AssetService } from './services/AssetService.js';
 import type { VerificationService } from './services/VerificationService.js';
+import type { BlockchainService } from './services/BlockchainService.js';
 
 export interface AssetAppDependencies {
   assetService: AssetService;
   verificationService: VerificationService;
+  blockchainService?: BlockchainService;
   corsOrigins?: string;
 }
 

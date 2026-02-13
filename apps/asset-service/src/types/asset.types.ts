@@ -74,3 +74,17 @@ export interface ApproveAssetDTO {
 export interface RejectAssetDTO {
   notes: string;
 }
+
+export interface BlockchainConfig {
+  rpcUrl: string;
+  privateKey: string;
+  contractAddress: string;
+}
+
+export interface MintResult {
+  txHash: string;
+}
+
+export interface BurnResult {
+  txHash: string;
+}
