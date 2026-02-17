@@ -182,3 +182,54 @@ export interface KYCStatus {
   missingDocuments: KYCDocumentType[];
   expiredDocuments: KYCDocumentType[];
 }
+
+// ─── PEP Checking (Session 4.4) ──────────────────────────────────────────────
+
+export type PEPCategory = 'government_official' | 'military' | 'state_corp_executive' | 'political_party_official' | 'family_member' | 'close_associate';
+export type PEPCheckStatus = 'clear' | 'pep_identified' | 'edd_required' | 'edd_completed' | 'edd_failed';
+
+export interface PEPCheck {
+  id: string;
+  beneficialOwnerId: string | null;
+  individualName: string;
+  dateOfBirth: Date | null;
+  nationality: string | null;
+  institutionId: string | null;
+  status: PEPCheckStatus;
+  isPep: boolean;
+  pepCategory: PEPCategory | null;
+  pepDetails: Record<string, unknown> | null;
+  riskLevel: string | null;
+  checkedBy: string | null;
+  reviewedBy: string | null;
+  reviewedAt: Date | null;
+  reviewNotes: string | null;
+  eddRequired: boolean;
+  eddCompletedAt: Date | null;
+  eddNotes: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface CheckPEPDTO {
+  individualName: string;
+  dateOfBirth?: string;
+  nationality?: string;
+  beneficialOwnerId?: string;
+  institutionId?: string;
+  checkedBy?: string;
+}
+
+export interface CompletePEPReviewDTO {
+  reviewedBy: string;
+  status: 'edd_completed' | 'edd_failed';
+  notes: string;
+}
+
+export interface PEPCheckListQuery {
+  institutionId?: string;
+  status?: PEPCheckStatus;
+  isPep?: boolean;
+  limit: number;
+  offset: number;
+}

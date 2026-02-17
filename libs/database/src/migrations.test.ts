@@ -1,5 +1,5 @@
 /**
- * Migration tests for 0011–0021.
+ * Migration tests for 0011–0022.
  *
  * These tests use a mock pgm object to capture SQL statements emitted by each
  * migration's up()/down() functions. No live database is required.
@@ -27,6 +27,8 @@ const migration0019 = require('../migrations/0019_sanctions_screenings.js');
 const migration0020 = require('../migrations/0020_aml_alerts.js');
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const migration0021 = require('../migrations/0021_kyc_documents_expiry.js');
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const migration0022 = require('../migrations/0022_pep_checks.js');
 
 /** Creates a mock pgm object and returns captured SQL strings after calling fn. */
 function captureSql(fn: (pgm: { sql: (s: string) => void }) => void): string[] {
@@ -765,6 +767,111 @@ describe('Migration 0021: kyc_documents_expiry', () => {
       const sqls = captureSql(migration0021.down);
       const lastIdx = sqls.length - 1;
       expect(sqls[lastIdx]).toContain('DROP COLUMN');
+    });
+  });
+});
+
+// ─── Migration 0022: pep_checks ───────────────────────────────────────────────
+
+describe('Migration 0022: pep_checks', () => {
+  describe('up', () => {
+    let sqls: string[];
+    beforeEach(() => { sqls = captureSql(migration0022.up); });
+
+    it('creates the pep_category_enum type', () => {
+      const all = joined(sqls);
+      expect(all).toContain('CREATE TYPE pep_category_enum');
+      expect(all).toContain('government_official');
+      expect(all).toContain('military');
+      expect(all).toContain('state_corp_executive');
+      expect(all).toContain('political_party_official');
+      expect(all).toContain('family_member');
+      expect(all).toContain('close_associate');
+    });
+
+    it('creates the pep_check_status_enum type', () => {
+      const all = joined(sqls);
+      expect(all).toContain('CREATE TYPE pep_check_status_enum');
+      expect(all).toContain('clear');
+      expect(all).toContain('pep_identified');
+      expect(all).toContain('edd_required');
+      expect(all).toContain('edd_completed');
+      expect(all).toContain('edd_failed');
+    });
+
+    it('creates the pep_checks table', () => {
+      expect(joined(sqls)).toContain('CREATE TABLE pep_checks');
+    });
+
+    it('includes core PEP check columns', () => {
+      const all = joined(sqls);
+      expect(all).toContain('beneficial_owner_id');
+      expect(all).toContain('individual_name');
+      expect(all).toContain('date_of_birth');
+      expect(all).toContain('nationality');
+      expect(all).toContain('is_pep');
+      expect(all).toContain('pep_category');
+      expect(all).toContain('pep_details');
+      expect(all).toContain('risk_level');
+    });
+
+    it('includes EDD columns', () => {
+      const all = joined(sqls);
+      expect(all).toContain('edd_required');
+      expect(all).toContain('edd_completed_at');
+      expect(all).toContain('edd_notes');
+    });
+
+    it('includes review columns', () => {
+      const all = joined(sqls);
+      expect(all).toContain('checked_by');
+      expect(all).toContain('reviewed_by');
+      expect(all).toContain('reviewed_at');
+      expect(all).toContain('review_notes');
+    });
+
+    it('references beneficial_owners, institutions, and users tables', () => {
+      const all = joined(sqls);
+      expect(all).toContain('REFERENCES beneficial_owners(id)');
+      expect(all).toContain('REFERENCES institutions(id)');
+      expect(all).toContain('REFERENCES users(id)');
+    });
+
+    it('creates indexes', () => {
+      const all = joined(sqls);
+      expect(all).toContain('idx_pep_checks_beneficial_owner_id');
+      expect(all).toContain('idx_pep_checks_institution_id');
+      expect(all).toContain('idx_pep_checks_status');
+      expect(all).toContain('idx_pep_checks_is_pep');
+      expect(all).toContain('idx_pep_checks_individual_name');
+      expect(all).toContain('idx_pep_checks_created_at');
+    });
+
+    it('creates enums before table (order matters)', () => {
+      const categoryIdx = sqls.findIndex((s) => s.includes('pep_category_enum'));
+      const statusIdx = sqls.findIndex((s) => s.includes('pep_check_status_enum'));
+      const tableIdx = sqls.findIndex((s) => s.includes('CREATE TABLE pep_checks'));
+      expect(categoryIdx).toBeLessThan(tableIdx);
+      expect(statusIdx).toBeLessThan(tableIdx);
+    });
+  });
+
+  describe('down', () => {
+    it('drops table and both enum types', () => {
+      const sqls = captureSql(migration0022.down);
+      const all = joined(sqls);
+      expect(all).toContain('DROP TABLE IF EXISTS pep_checks');
+      expect(all).toContain('DROP TYPE IF EXISTS pep_check_status_enum');
+      expect(all).toContain('DROP TYPE IF EXISTS pep_category_enum');
+    });
+
+    it('drops table before types (order matters)', () => {
+      const sqls = captureSql(migration0022.down);
+      const tableIdx = sqls.findIndex((s) => s.includes('DROP TABLE IF EXISTS pep_checks'));
+      const statusIdx = sqls.findIndex((s) => s.includes('pep_check_status_enum'));
+      const categoryIdx = sqls.findIndex((s) => s.includes('pep_category_enum'));
+      expect(tableIdx).toBeLessThan(statusIdx);
+      expect(tableIdx).toBeLessThan(categoryIdx);
     });
   });
 });
