@@ -1,5 +1,5 @@
 /**
- * Migration tests for 0011–0020.
+ * Migration tests for 0011–0021.
  *
  * These tests use a mock pgm object to capture SQL statements emitted by each
  * migration's up()/down() functions. No live database is required.
@@ -25,6 +25,8 @@ const migration0018 = require('../migrations/0018_asset_search_indexes.js');
 const migration0019 = require('../migrations/0019_sanctions_screenings.js');
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const migration0020 = require('../migrations/0020_aml_alerts.js');
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const migration0021 = require('../migrations/0021_kyc_documents_expiry.js');
 
 /** Creates a mock pgm object and returns captured SQL strings after calling fn. */
 function captureSql(fn: (pgm: { sql: (s: string) => void }) => void): string[] {
@@ -714,6 +716,55 @@ describe('Migration 0020: aml_alerts', () => {
       const typeIdx = sqls.findIndex((s) => s.includes('aml_alert_type_enum'));
       expect(tableIdx).toBeLessThan(statusIdx);
       expect(statusIdx).toBeLessThan(typeIdx);
+    });
+  });
+});
+
+// ─── Migration 0021: kyc_documents_expiry ─────────────────────────────────────
+
+describe('Migration 0021: kyc_documents_expiry', () => {
+  describe('up', () => {
+    let sqls: string[];
+    beforeEach(() => { sqls = captureSql(migration0021.up); });
+
+    it('adds document_expiry_date column to kyc_documents', () => {
+      const all = joined(sqls);
+      expect(all).toContain('ALTER TABLE kyc_documents ADD COLUMN document_expiry_date');
+    });
+
+    it('creates partial index on document_expiry_date', () => {
+      const all = joined(sqls);
+      expect(all).toContain('idx_kyc_documents_expiry');
+      expect(all).toContain('WHERE document_expiry_date IS NOT NULL');
+    });
+
+    it('creates composite index on institution_id, status', () => {
+      expect(joined(sqls)).toContain('idx_kyc_documents_institution_status');
+    });
+
+    it('creates composite index on user_id, status', () => {
+      expect(joined(sqls)).toContain('idx_kyc_documents_user_status');
+    });
+
+    it('creates 4 SQL statements', () => {
+      expect(sqls).toHaveLength(4);
+    });
+  });
+
+  describe('down', () => {
+    it('drops indexes and column in correct order', () => {
+      const sqls = captureSql(migration0021.down);
+      const all = joined(sqls);
+      expect(all).toContain('DROP INDEX IF EXISTS idx_kyc_documents_user_status');
+      expect(all).toContain('DROP INDEX IF EXISTS idx_kyc_documents_institution_status');
+      expect(all).toContain('DROP INDEX IF EXISTS idx_kyc_documents_expiry');
+      expect(all).toContain('ALTER TABLE kyc_documents DROP COLUMN IF EXISTS document_expiry_date');
+    });
+
+    it('drops column last (after indexes)', () => {
+      const sqls = captureSql(migration0021.down);
+      const lastIdx = sqls.length - 1;
+      expect(sqls[lastIdx]).toContain('DROP COLUMN');
     });
   });
 });

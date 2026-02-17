@@ -129,3 +129,56 @@ export interface AMLAlertListQuery {
   limit: number;
   offset: number;
 }
+
+// ─── KYC Document Management (Session 4.3) ──────────────────────────────────
+
+export type KYCDocumentType = 'certificate_of_incorporation' | 'proof_of_address' | 'ownership_structure' | 'government_id' | 'selfie';
+export type KYCDocumentStatus = 'pending' | 'approved' | 'rejected';
+export type KYCEntityType = 'institution' | 'user';
+
+export interface KYCDocument {
+  id: string;
+  institutionId: string | null;
+  userId: string | null;
+  documentType: KYCDocumentType;
+  status: KYCDocumentStatus;
+  fileUrl: string;
+  reviewerId: string | null;
+  reviewedAt: Date | null;
+  rejectionReason: string | null;
+  documentExpiryDate: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface CreateKYCDocumentDTO {
+  institutionId?: string;
+  userId?: string;
+  documentType: KYCDocumentType;
+  fileUrl: string;
+  documentExpiryDate?: string;
+}
+
+export interface ReviewKYCDocumentDTO {
+  reviewerId: string;
+  status: 'approved' | 'rejected';
+  rejectionReason?: string;
+}
+
+export interface KYCDocumentListQuery {
+  institutionId?: string;
+  userId?: string;
+  status?: KYCDocumentStatus;
+  documentType?: KYCDocumentType;
+  limit: number;
+  offset: number;
+}
+
+export interface KYCStatus {
+  entityType: KYCEntityType;
+  entityId: string;
+  overallStatus: 'complete' | 'incomplete' | 'pending' | 'expired';
+  documents: KYCDocument[];
+  missingDocuments: KYCDocumentType[];
+  expiredDocuments: KYCDocumentType[];
+}

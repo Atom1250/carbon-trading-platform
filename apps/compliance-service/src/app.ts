@@ -8,12 +8,15 @@ import { loggingMiddleware } from './middleware/logging.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { createScreeningRouter } from './routes/screening.routes.js';
 import { createAMLRouter } from './routes/aml.routes.js';
+import { createKYCRouter } from './routes/kyc.routes.js';
 import type { SanctionsScreeningService } from './services/SanctionsScreeningService.js';
 import type { AMLMonitoringService } from './services/AMLMonitoringService.js';
+import type { KYCDocumentService } from './services/KYCDocumentService.js';
 
 export interface ComplianceAppDependencies {
   sanctionsScreeningService: SanctionsScreeningService;
   amlMonitoringService?: AMLMonitoringService;
+  kycDocumentService?: KYCDocumentService;
   corsOrigins?: string;
 }
 
@@ -47,6 +50,12 @@ export function createApp(deps: ComplianceAppDependencies): Express {
   if (deps.amlMonitoringService) {
     app.use('/aml', createAMLRouter({
       amlMonitoringService: deps.amlMonitoringService,
+    }));
+  }
+
+  if (deps.kycDocumentService) {
+    app.use('/kyc', createKYCRouter({
+      kycDocumentService: deps.kycDocumentService,
     }));
   }
 
