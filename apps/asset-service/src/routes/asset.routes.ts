@@ -53,10 +53,21 @@ const rejectSchema = z.object({
   notes: z.string().min(1, 'Notes are required for rejection').max(5000),
 });
 
+const SORT_BY_VALUES = ['created_at', 'total_supply', 'name'] as const;
+const SORT_ORDER_VALUES = ['asc', 'desc'] as const;
+
 const listQuerySchema = z.object({
   assetType: z.enum(ASSET_TYPES).optional(),
   status: z.enum(ASSET_STATUSES).optional(),
   institutionId: z.string().uuid().optional(),
+  vintage: z.coerce.number().int().min(1900).max(2100).optional(),
+  geography: z.string().max(100).optional(),
+  standard: z.string().max(100).optional(),
+  minSupply: z.coerce.number().min(0).optional(),
+  maxSupply: z.coerce.number().min(0).optional(),
+  search: z.string().max(255).optional(),
+  sortBy: z.enum(SORT_BY_VALUES).optional(),
+  sortOrder: z.enum(SORT_ORDER_VALUES).optional(),
   limit: z.coerce.number().int().min(1).max(100).default(20),
   offset: z.coerce.number().int().min(0).default(0),
 });
@@ -129,6 +140,19 @@ export function createAssetRouter(deps: AssetRouterDependencies): Router {
           hasMore: query.offset + query.limit < result.total,
         },
       });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // GET /assets/analytics
+  router.get('/analytics', async (_req: Request, res: Response, next: NextFunction) => {
+    try {
+      const [analytics, geographyBreakdown] = await Promise.all([
+        service.getAnalytics(),
+        service.getGeographyBreakdown(),
+      ]);
+      res.status(200).json({ data: { analytics, geographyBreakdown } });
     } catch (err) {
       next(err);
     }

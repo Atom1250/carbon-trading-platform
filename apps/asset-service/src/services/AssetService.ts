@@ -6,6 +6,8 @@ import type {
   UpdateAssetDTO,
   ListAssetsQuery,
   AssetListResult,
+  AnalyticsRow,
+  GeographyRow,
 } from '../types/asset.types.js';
 
 const SELECT_COLUMNS = `
@@ -28,6 +30,12 @@ const SELECT_COLUMNS = `
   created_at        AS "createdAt",
   updated_at        AS "updatedAt"
 `;
+
+const SORT_COLUMN_MAP: Record<string, string> = {
+  created_at: 'created_at',
+  total_supply: 'total_supply',
+  name: 'name',
+};
 
 export class AssetService {
   constructor(private readonly db: IDatabaseClient) {}
@@ -139,6 +147,36 @@ export class AssetService {
       filterValues.push(params.institutionId);
     }
 
+    if (params.vintage !== undefined) {
+      conditions.push(`vintage = $${filterValues.length + 1}`);
+      filterValues.push(params.vintage);
+    }
+
+    if (params.geography) {
+      conditions.push(`geography = $${filterValues.length + 1}`);
+      filterValues.push(params.geography);
+    }
+
+    if (params.standard) {
+      conditions.push(`standard = $${filterValues.length + 1}`);
+      filterValues.push(params.standard);
+    }
+
+    if (params.minSupply !== undefined) {
+      conditions.push(`available_supply >= $${filterValues.length + 1}`);
+      filterValues.push(params.minSupply);
+    }
+
+    if (params.maxSupply !== undefined) {
+      conditions.push(`available_supply <= $${filterValues.length + 1}`);
+      filterValues.push(params.maxSupply);
+    }
+
+    if (params.search) {
+      conditions.push(`(name ILIKE $${filterValues.length + 1} OR description ILIKE $${filterValues.length + 1})`);
+      filterValues.push(`%${params.search}%`);
+    }
+
     const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
 
     const countRows = await this.db.query<{ count: string }>(
@@ -146,6 +184,9 @@ export class AssetService {
       filterValues,
     );
     const total = parseInt(countRows[0].count, 10);
+
+    const sortColumn = SORT_COLUMN_MAP[params.sortBy ?? 'created_at'] ?? 'created_at';
+    const sortDirection = params.sortOrder === 'asc' ? 'ASC' : 'DESC';
 
     const limitParam = filterValues.length + 1;
     const offsetParam = filterValues.length + 2;
@@ -155,11 +196,62 @@ export class AssetService {
       `SELECT ${SELECT_COLUMNS}
        FROM assets
        ${whereClause}
-       ORDER BY created_at DESC
+       ORDER BY ${sortColumn} ${sortDirection}
        LIMIT $${limitParam} OFFSET $${offsetParam}`,
       paginatedValues,
     );
 
     return { assets, total };
+  }
+
+  async getAnalytics(): Promise<AnalyticsRow[]> {
+    const rows = await this.db.query<{
+      assetType: string;
+      status: string;
+      count: string;
+      totalSupply: string;
+      availableSupply: string;
+      retiredSupply: string;
+    }>(
+      `SELECT
+         asset_type        AS "assetType",
+         status,
+         COUNT(*)          AS count,
+         SUM(total_supply)     AS "totalSupply",
+         SUM(available_supply) AS "availableSupply",
+         SUM(retired_supply)   AS "retiredSupply"
+       FROM assets
+       GROUP BY asset_type, status
+       ORDER BY asset_type, status`,
+    );
+
+    return rows.map((r) => ({
+      ...r,
+      count: parseInt(r.count as string, 10),
+    })) as unknown as AnalyticsRow[];
+  }
+
+  async getGeographyBreakdown(): Promise<GeographyRow[]> {
+    const rows = await this.db.query<{
+      geography: string;
+      count: string;
+      availableSupply: string;
+    }>(
+      `SELECT
+         geography,
+         COUNT(*)              AS count,
+         SUM(available_supply) AS "availableSupply"
+       FROM assets
+       WHERE asset_type = 'carbon_credit'
+         AND status IN ('verified', 'minted')
+         AND geography IS NOT NULL
+       GROUP BY geography
+       ORDER BY count DESC`,
+    );
+
+    return rows.map((r) => ({
+      ...r,
+      count: parseInt(r.count as string, 10),
+    })) as unknown as GeographyRow[];
   }
 }

@@ -1,5 +1,5 @@
 /**
- * Migration tests for 0011–0017.
+ * Migration tests for 0011–0018.
  *
  * These tests use a mock pgm object to capture SQL statements emitted by each
  * migration's up()/down() functions. No live database is required.
@@ -19,6 +19,8 @@ const migration0015 = require('../migrations/0015_assets.js');
 const migration0016 = require('../migrations/0016_asset_verifications.js');
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const migration0017 = require('../migrations/0017_asset_retirements.js');
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const migration0018 = require('../migrations/0018_asset_search_indexes.js');
 
 /** Creates a mock pgm object and returns captured SQL strings after calling fn. */
 function captureSql(fn: (pgm: { sql: (s: string) => void }) => void): string[] {
@@ -412,6 +414,58 @@ describe('Migration 0017: asset_retirements', () => {
       const sqls = captureSql(migration0017.down);
       const all = joined(sqls);
       expect(all).toContain('DROP TABLE IF EXISTS asset_retirements');
+    });
+  });
+});
+
+// ─── Migration 0018: asset_search_indexes ────────────────────────────────────
+
+describe('Migration 0018: asset_search_indexes', () => {
+  describe('up', () => {
+    let sqls: string[];
+    beforeEach(() => { sqls = captureSql(migration0018.up); });
+
+    it('creates partial index on vintage', () => {
+      const all = joined(sqls);
+      expect(all).toContain('idx_assets_vintage');
+      expect(all).toContain('ON assets(vintage)');
+    });
+
+    it('creates partial index on geography', () => {
+      const all = joined(sqls);
+      expect(all).toContain('idx_assets_geography');
+      expect(all).toContain('ON assets(geography)');
+    });
+
+    it('creates partial index on standard', () => {
+      const all = joined(sqls);
+      expect(all).toContain('idx_assets_standard');
+      expect(all).toContain('ON assets(standard)');
+    });
+
+    it('creates index on available_supply', () => {
+      expect(joined(sqls)).toContain('idx_assets_available_supply');
+    });
+
+    it('creates composite index on asset_type, status, created_at', () => {
+      expect(joined(sqls)).toContain('idx_assets_type_status_created');
+    });
+
+    it('creates 7 indexes total', () => {
+      expect(sqls).toHaveLength(7);
+    });
+  });
+
+  describe('down', () => {
+    it('drops all 7 indexes', () => {
+      const sqls = captureSql(migration0018.down);
+      expect(sqls).toHaveLength(7);
+      const all = joined(sqls);
+      expect(all).toContain('DROP INDEX IF EXISTS idx_assets_vintage');
+      expect(all).toContain('DROP INDEX IF EXISTS idx_assets_geography');
+      expect(all).toContain('DROP INDEX IF EXISTS idx_assets_standard');
+      expect(all).toContain('DROP INDEX IF EXISTS idx_assets_available_supply');
+      expect(all).toContain('DROP INDEX IF EXISTS idx_assets_type_status_created');
     });
   });
 });

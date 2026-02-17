@@ -43,10 +43,21 @@ export interface UpdateAssetDTO {
   metadataUri?: string;
 }
 
+export type AssetSortBy = 'created_at' | 'total_supply' | 'name';
+export type SortOrder = 'asc' | 'desc';
+
 export interface ListAssetsQuery {
   assetType?: AssetType;
   status?: AssetStatus;
   institutionId?: string;
+  vintage?: number;
+  geography?: string;
+  standard?: string;
+  minSupply?: number;
+  maxSupply?: number;
+  search?: string;
+  sortBy?: AssetSortBy;
+  sortOrder?: SortOrder;
   limit: number;
   offset: number;
 }
@@ -103,4 +114,19 @@ export interface RetireAssetDTO {
   amount: number;
   userId: string;
   reason: string;
+}
+
+export interface AnalyticsRow {
+  assetType: AssetType;
+  status: AssetStatus;
+  count: number;
+  totalSupply: string;
+  availableSupply: string;
+  retiredSupply: string;
+}
+
+export interface GeographyRow {
+  geography: string;
+  count: number;
+  availableSupply: string;
 }

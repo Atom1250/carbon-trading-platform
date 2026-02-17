@@ -54,11 +54,28 @@ const VERIFICATION_RECORD = {
   createdAt: new Date('2025-01-02').toISOString(),
 };
 
+const ANALYTICS_ROW = {
+  assetType: 'carbon_credit',
+  status: 'verified',
+  count: 5,
+  totalSupply: '50000.00000000',
+  availableSupply: '45000.00000000',
+  retiredSupply: '5000.00000000',
+};
+
+const GEOGRAPHY_ROW = {
+  geography: 'Brazil',
+  count: 3,
+  availableSupply: '30000.00000000',
+};
+
 function makeService(opts: {
   create?: jest.Mock;
   findById?: jest.Mock;
   update?: jest.Mock;
   list?: jest.Mock;
+  getAnalytics?: jest.Mock;
+  getGeographyBreakdown?: jest.Mock;
 } = {}) {
   return {
     create: opts.create ?? jest.fn().mockResolvedValue(ASSET),
@@ -68,6 +85,8 @@ function makeService(opts: {
       assets: [ASSET],
       total: 1,
     }),
+    getAnalytics: opts.getAnalytics ?? jest.fn().mockResolvedValue([ANALYTICS_ROW]),
+    getGeographyBreakdown: opts.getGeographyBreakdown ?? jest.fn().mockResolvedValue([GEOGRAPHY_ROW]),
   };
 }
 
@@ -301,6 +320,85 @@ describe('GET /assets', () => {
     const res = await request(makeApp()).get('/assets?limit=abc');
 
     expect(res.status).toBe(422);
+  });
+
+  it('should pass vintage filter to service', async () => {
+    const list = jest.fn().mockResolvedValue({ assets: [], total: 0 });
+    const app = makeApp({ list });
+
+    await request(app).get('/assets?vintage=2024');
+
+    expect(list).toHaveBeenCalledWith(expect.objectContaining({ vintage: 2024 }));
+  });
+
+  it('should pass geography filter to service', async () => {
+    const list = jest.fn().mockResolvedValue({ assets: [], total: 0 });
+    const app = makeApp({ list });
+
+    await request(app).get('/assets?geography=Brazil');
+
+    expect(list).toHaveBeenCalledWith(expect.objectContaining({ geography: 'Brazil' }));
+  });
+
+  it('should pass standard filter to service', async () => {
+    const list = jest.fn().mockResolvedValue({ assets: [], total: 0 });
+    const app = makeApp({ list });
+
+    await request(app).get('/assets?standard=Verra%20VCS');
+
+    expect(list).toHaveBeenCalledWith(expect.objectContaining({ standard: 'Verra VCS' }));
+  });
+
+  it('should pass minSupply and maxSupply to service', async () => {
+    const list = jest.fn().mockResolvedValue({ assets: [], total: 0 });
+    const app = makeApp({ list });
+
+    await request(app).get('/assets?minSupply=100&maxSupply=5000');
+
+    expect(list).toHaveBeenCalledWith(expect.objectContaining({ minSupply: 100, maxSupply: 5000 }));
+  });
+
+  it('should pass search to service', async () => {
+    const list = jest.fn().mockResolvedValue({ assets: [], total: 0 });
+    const app = makeApp({ list });
+
+    await request(app).get('/assets?search=green');
+
+    expect(list).toHaveBeenCalledWith(expect.objectContaining({ search: 'green' }));
+  });
+
+  it('should pass sortBy and sortOrder to service', async () => {
+    const list = jest.fn().mockResolvedValue({ assets: [], total: 0 });
+    const app = makeApp({ list });
+
+    await request(app).get('/assets?sortBy=total_supply&sortOrder=desc');
+
+    expect(list).toHaveBeenCalledWith(expect.objectContaining({ sortBy: 'total_supply', sortOrder: 'desc' }));
+  });
+});
+
+// ─── GET /assets/analytics ──────────────────────────────────────────────────────
+
+describe('GET /assets/analytics', () => {
+  it('should return 200 with analytics and geography breakdown', async () => {
+    const res = await request(makeApp()).get('/assets/analytics');
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.analytics).toHaveLength(1);
+    expect(res.body.data.analytics[0].assetType).toBe('carbon_credit');
+    expect(res.body.data.geographyBreakdown).toHaveLength(1);
+    expect(res.body.data.geographyBreakdown[0].geography).toBe('Brazil');
+  });
+
+  it('should call both getAnalytics and getGeographyBreakdown', async () => {
+    const getAnalytics = jest.fn().mockResolvedValue([]);
+    const getGeographyBreakdown = jest.fn().mockResolvedValue([]);
+    const app = makeApp({ getAnalytics, getGeographyBreakdown });
+
+    await request(app).get('/assets/analytics');
+
+    expect(getAnalytics).toHaveBeenCalled();
+    expect(getGeographyBreakdown).toHaveBeenCalled();
   });
 });
 

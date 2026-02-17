@@ -345,5 +345,203 @@ describe('AssetService', () => {
       expect(countSql).toContain('institution_id = $3');
       expect(countParams).toEqual(['loan_portion', 'minted', INSTITUTION_ID]);
     });
+
+    it('should pass vintage filter to query', async () => {
+      const db = makeMockDb([[{ count: '1' }], [DB_ROW]]);
+      const service = new AssetService(db as never);
+
+      await service.list({ vintage: 2024, limit: 20, offset: 0 });
+
+      const [countSql, countParams] = (db.query as jest.Mock).mock.calls[0] as [string, unknown[]];
+      expect(countSql).toContain('vintage = $1');
+      expect(countParams[0]).toBe(2024);
+    });
+
+    it('should pass geography filter to query', async () => {
+      const db = makeMockDb([[{ count: '1' }], [DB_ROW]]);
+      const service = new AssetService(db as never);
+
+      await service.list({ geography: 'Brazil', limit: 20, offset: 0 });
+
+      const [countSql, countParams] = (db.query as jest.Mock).mock.calls[0] as [string, unknown[]];
+      expect(countSql).toContain('geography = $1');
+      expect(countParams[0]).toBe('Brazil');
+    });
+
+    it('should pass standard filter to query', async () => {
+      const db = makeMockDb([[{ count: '1' }], [DB_ROW]]);
+      const service = new AssetService(db as never);
+
+      await service.list({ standard: 'Verra VCS', limit: 20, offset: 0 });
+
+      const [countSql, countParams] = (db.query as jest.Mock).mock.calls[0] as [string, unknown[]];
+      expect(countSql).toContain('standard = $1');
+      expect(countParams[0]).toBe('Verra VCS');
+    });
+
+    it('should pass minSupply filter to query', async () => {
+      const db = makeMockDb([[{ count: '1' }], [DB_ROW]]);
+      const service = new AssetService(db as never);
+
+      await service.list({ minSupply: 1000, limit: 20, offset: 0 });
+
+      const [countSql, countParams] = (db.query as jest.Mock).mock.calls[0] as [string, unknown[]];
+      expect(countSql).toContain('available_supply >= $1');
+      expect(countParams[0]).toBe(1000);
+    });
+
+    it('should pass maxSupply filter to query', async () => {
+      const db = makeMockDb([[{ count: '1' }], [DB_ROW]]);
+      const service = new AssetService(db as never);
+
+      await service.list({ maxSupply: 5000, limit: 20, offset: 0 });
+
+      const [countSql, countParams] = (db.query as jest.Mock).mock.calls[0] as [string, unknown[]];
+      expect(countSql).toContain('available_supply <= $1');
+      expect(countParams[0]).toBe(5000);
+    });
+
+    it('should pass search filter with ILIKE to query', async () => {
+      const db = makeMockDb([[{ count: '1' }], [DB_ROW]]);
+      const service = new AssetService(db as never);
+
+      await service.list({ search: 'green', limit: 20, offset: 0 });
+
+      const [countSql, countParams] = (db.query as jest.Mock).mock.calls[0] as [string, unknown[]];
+      expect(countSql).toContain('name ILIKE $1');
+      expect(countSql).toContain('description ILIKE $1');
+      expect(countParams[0]).toBe('%green%');
+    });
+
+    it('should sort by total_supply descending', async () => {
+      const db = makeMockDb([[{ count: '1' }], [DB_ROW]]);
+      const service = new AssetService(db as never);
+
+      await service.list({ sortBy: 'total_supply', sortOrder: 'desc', limit: 20, offset: 0 });
+
+      const [dataSql] = (db.query as jest.Mock).mock.calls[1] as [string];
+      expect(dataSql).toContain('ORDER BY total_supply DESC');
+    });
+
+    it('should sort by name ascending', async () => {
+      const db = makeMockDb([[{ count: '1' }], [DB_ROW]]);
+      const service = new AssetService(db as never);
+
+      await service.list({ sortBy: 'name', sortOrder: 'asc', limit: 20, offset: 0 });
+
+      const [dataSql] = (db.query as jest.Mock).mock.calls[1] as [string];
+      expect(dataSql).toContain('ORDER BY name ASC');
+    });
+
+    it('should default sort to created_at DESC', async () => {
+      const db = makeMockDb([[{ count: '1' }], [DB_ROW]]);
+      const service = new AssetService(db as never);
+
+      await service.list({ limit: 20, offset: 0 });
+
+      const [dataSql] = (db.query as jest.Mock).mock.calls[1] as [string];
+      expect(dataSql).toContain('ORDER BY created_at DESC');
+    });
+  });
+
+  // ─── getAnalytics ─────────────────────────────────────────────────────────
+
+  describe('getAnalytics', () => {
+    it('should return aggregated analytics grouped by type and status', async () => {
+      const db = makeMockDb([[
+        {
+          assetType: 'carbon_credit',
+          status: 'verified',
+          count: '5',
+          totalSupply: '50000.00000000',
+          availableSupply: '45000.00000000',
+          retiredSupply: '5000.00000000',
+        },
+        {
+          assetType: 'loan_portion',
+          status: 'minted',
+          count: '3',
+          totalSupply: '30000.00000000',
+          availableSupply: '30000.00000000',
+          retiredSupply: '0.00000000',
+        },
+      ]]);
+      const service = new AssetService(db as never);
+
+      const result = await service.getAnalytics();
+
+      expect(result).toHaveLength(2);
+      expect(result[0].count).toBe(5);
+      expect(result[0].assetType).toBe('carbon_credit');
+      expect(result[1].count).toBe(3);
+    });
+
+    it('should query with GROUP BY asset_type, status', async () => {
+      const db = makeMockDb([[]]);
+      const service = new AssetService(db as never);
+
+      await service.getAnalytics();
+
+      const [sql] = (db.query as jest.Mock).mock.calls[0] as [string];
+      expect(sql).toContain('GROUP BY asset_type, status');
+    });
+
+    it('should return empty array when no assets exist', async () => {
+      const db = makeMockDb([[]]);
+      const service = new AssetService(db as never);
+
+      const result = await service.getAnalytics();
+
+      expect(result).toHaveLength(0);
+    });
+  });
+
+  // ─── getGeographyBreakdown ────────────────────────────────────────────────
+
+  describe('getGeographyBreakdown', () => {
+    it('should return geography breakdown for verified/minted carbon credits', async () => {
+      const db = makeMockDb([[
+        { geography: 'Brazil', count: '3', availableSupply: '30000.00000000' },
+        { geography: 'Kenya', count: '2', availableSupply: '20000.00000000' },
+      ]]);
+      const service = new AssetService(db as never);
+
+      const result = await service.getGeographyBreakdown();
+
+      expect(result).toHaveLength(2);
+      expect(result[0].geography).toBe('Brazil');
+      expect(result[0].count).toBe(3);
+      expect(result[1].geography).toBe('Kenya');
+    });
+
+    it('should only include carbon_credit assets', async () => {
+      const db = makeMockDb([[]]);
+      const service = new AssetService(db as never);
+
+      await service.getGeographyBreakdown();
+
+      const [sql] = (db.query as jest.Mock).mock.calls[0] as [string];
+      expect(sql).toContain("asset_type = 'carbon_credit'");
+    });
+
+    it('should only include verified and minted statuses', async () => {
+      const db = makeMockDb([[]]);
+      const service = new AssetService(db as never);
+
+      await service.getGeographyBreakdown();
+
+      const [sql] = (db.query as jest.Mock).mock.calls[0] as [string];
+      expect(sql).toContain("status IN ('verified', 'minted')");
+    });
+
+    it('should exclude assets with NULL geography', async () => {
+      const db = makeMockDb([[]]);
+      const service = new AssetService(db as never);
+
+      await service.getGeographyBreakdown();
+
+      const [sql] = (db.query as jest.Mock).mock.calls[0] as [string];
+      expect(sql).toContain('geography IS NOT NULL');
+    });
   });
 });
