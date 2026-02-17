@@ -1,5 +1,5 @@
 /**
- * Migration tests for 0011–0018.
+ * Migration tests for 0011–0020.
  *
  * These tests use a mock pgm object to capture SQL statements emitted by each
  * migration's up()/down() functions. No live database is required.
@@ -23,6 +23,8 @@ const migration0017 = require('../migrations/0017_asset_retirements.js');
 const migration0018 = require('../migrations/0018_asset_search_indexes.js');
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const migration0019 = require('../migrations/0019_sanctions_screenings.js');
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const migration0020 = require('../migrations/0020_aml_alerts.js');
 
 /** Creates a mock pgm object and returns captured SQL strings after calling fn. */
 function captureSql(fn: (pgm: { sql: (s: string) => void }) => void): string[] {
@@ -584,6 +586,134 @@ describe('Migration 0019: sanctions_screenings', () => {
       const entityIdx = sqls.findIndex((s) => s.includes('screening_entity_type_enum'));
       expect(tableIdx).toBeLessThan(statusIdx);
       expect(statusIdx).toBeLessThan(entityIdx);
+    });
+  });
+});
+
+// ─── Migration 0020: aml_alerts ───────────────────────────────────────────────
+
+describe('Migration 0020: aml_alerts', () => {
+  describe('up', () => {
+    let sqls: string[];
+    beforeEach(() => { sqls = captureSql(migration0020.up); });
+
+    it('creates the aml_alert_type_enum type', () => {
+      const all = joined(sqls);
+      expect(all).toContain('CREATE TYPE aml_alert_type_enum AS ENUM');
+      expect(all).toContain('structuring');
+      expect(all).toContain('layering');
+      expect(all).toContain('rapid_trading');
+      expect(all).toContain('large_volume');
+      expect(all).toContain('round_amounts');
+      expect(all).toContain('velocity_anomaly');
+    });
+
+    it('creates the aml_alert_severity_enum type', () => {
+      const all = joined(sqls);
+      expect(all).toContain('CREATE TYPE aml_alert_severity_enum AS ENUM');
+      expect(all).toContain('low');
+      expect(all).toContain('medium');
+      expect(all).toContain('high');
+      expect(all).toContain('critical');
+    });
+
+    it('creates the aml_alert_status_enum type', () => {
+      const all = joined(sqls);
+      expect(all).toContain('CREATE TYPE aml_alert_status_enum AS ENUM');
+      expect(all).toContain('open');
+      expect(all).toContain('under_investigation');
+      expect(all).toContain('escalated');
+      expect(all).toContain('resolved_suspicious');
+      expect(all).toContain('resolved_legitimate');
+    });
+
+    it('creates the aml_alerts table', () => {
+      expect(joined(sqls)).toContain('CREATE TABLE aml_alerts');
+    });
+
+    it('includes core alert columns', () => {
+      const all = joined(sqls);
+      expect(all).toContain('alert_type');
+      expect(all).toContain('severity');
+      expect(all).toContain('status');
+      expect(all).toContain('description');
+      expect(all).toContain('transaction_ids');
+      expect(all).toContain('total_amount_usd');
+      expect(all).toContain('pattern_details');
+    });
+
+    it('includes investigation columns', () => {
+      const all = joined(sqls);
+      expect(all).toContain('assigned_to');
+      expect(all).toContain('investigated_at');
+      expect(all).toContain('investigation_notes');
+      expect(all).toContain('resolved_at');
+      expect(all).toContain('resolution_notes');
+    });
+
+    it('creates the aml_transaction_checks table', () => {
+      expect(joined(sqls)).toContain('CREATE TABLE aml_transaction_checks');
+    });
+
+    it('includes transaction check columns', () => {
+      const all = joined(sqls);
+      expect(all).toContain('transaction_id');
+      expect(all).toContain('amount_usd');
+      expect(all).toContain('transaction_type');
+      expect(all).toContain('is_suspicious');
+      expect(all).toContain('risk_score');
+      expect(all).toContain('rules_triggered');
+    });
+
+    it('references institutions, users, and aml_alerts tables', () => {
+      const all = joined(sqls);
+      expect(all).toContain('REFERENCES institutions(id)');
+      expect(all).toContain('REFERENCES users(id)');
+      expect(all).toContain('REFERENCES aml_alerts(id)');
+    });
+
+    it('creates indexes on aml_alerts', () => {
+      const all = joined(sqls);
+      expect(all).toContain('idx_aml_alerts_status');
+      expect(all).toContain('idx_aml_alerts_alert_type');
+      expect(all).toContain('idx_aml_alerts_severity');
+      expect(all).toContain('idx_aml_alerts_institution_id');
+      expect(all).toContain('idx_aml_alerts_created_at');
+    });
+
+    it('creates indexes on aml_transaction_checks', () => {
+      const all = joined(sqls);
+      expect(all).toContain('idx_aml_transaction_checks_transaction_id');
+      expect(all).toContain('idx_aml_transaction_checks_institution_id');
+      expect(all).toContain('idx_aml_transaction_checks_alert_id');
+    });
+  });
+
+  describe('down', () => {
+    it('drops both tables and all three enum types', () => {
+      const sqls = captureSql(migration0020.down);
+      const all = joined(sqls);
+      expect(all).toContain('DROP TABLE IF EXISTS aml_transaction_checks');
+      expect(all).toContain('DROP TABLE IF EXISTS aml_alerts');
+      expect(all).toContain('DROP TYPE IF EXISTS aml_alert_status_enum');
+      expect(all).toContain('DROP TYPE IF EXISTS aml_alert_severity_enum');
+      expect(all).toContain('DROP TYPE IF EXISTS aml_alert_type_enum');
+    });
+
+    it('drops transaction_checks before alerts (order matters)', () => {
+      const sqls = captureSql(migration0020.down);
+      const checksIdx = sqls.findIndex((s) => s.includes('aml_transaction_checks'));
+      const alertsIdx = sqls.findIndex((s) => s.includes('DROP TABLE IF EXISTS aml_alerts'));
+      expect(checksIdx).toBeLessThan(alertsIdx);
+    });
+
+    it('drops tables before types (order matters)', () => {
+      const sqls = captureSql(migration0020.down);
+      const tableIdx = sqls.findIndex((s) => s.includes('DROP TABLE IF EXISTS aml_alerts'));
+      const statusIdx = sqls.findIndex((s) => s.includes('aml_alert_status_enum'));
+      const typeIdx = sqls.findIndex((s) => s.includes('aml_alert_type_enum'));
+      expect(tableIdx).toBeLessThan(statusIdx);
+      expect(statusIdx).toBeLessThan(typeIdx);
     });
   });
 });

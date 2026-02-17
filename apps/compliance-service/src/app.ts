@@ -7,10 +7,13 @@ import { requestIdMiddleware } from './middleware/requestId.js';
 import { loggingMiddleware } from './middleware/logging.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { createScreeningRouter } from './routes/screening.routes.js';
+import { createAMLRouter } from './routes/aml.routes.js';
 import type { SanctionsScreeningService } from './services/SanctionsScreeningService.js';
+import type { AMLMonitoringService } from './services/AMLMonitoringService.js';
 
 export interface ComplianceAppDependencies {
   sanctionsScreeningService: SanctionsScreeningService;
+  amlMonitoringService?: AMLMonitoringService;
   corsOrigins?: string;
 }
 
@@ -40,6 +43,12 @@ export function createApp(deps: ComplianceAppDependencies): Express {
   app.use('/screenings', createScreeningRouter({
     sanctionsScreeningService: deps.sanctionsScreeningService,
   }));
+
+  if (deps.amlMonitoringService) {
+    app.use('/aml', createAMLRouter({
+      amlMonitoringService: deps.amlMonitoringService,
+    }));
+  }
 
   app.get('/health', (_req, res) => {
     res.status(200).json({ status: 'healthy', service: 'compliance-service' });

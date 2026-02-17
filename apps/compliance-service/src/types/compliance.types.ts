@@ -60,3 +60,72 @@ export interface ScreeningListQuery {
 export interface ScreeningWithMatches extends SanctionsScreening {
   matches: ScreeningMatch[];
 }
+
+// ─── AML Transaction Monitoring (Session 4.2) ──────────────────────────────
+
+export type AMLAlertType = 'structuring' | 'layering' | 'rapid_trading' | 'large_volume' | 'round_amounts' | 'velocity_anomaly';
+export type AMLAlertSeverity = 'low' | 'medium' | 'high' | 'critical';
+export type AMLAlertStatus = 'open' | 'under_investigation' | 'escalated' | 'resolved_suspicious' | 'resolved_legitimate';
+
+export interface AMLAlert {
+  id: string;
+  alertType: AMLAlertType;
+  severity: AMLAlertSeverity;
+  status: AMLAlertStatus;
+  institutionId: string | null;
+  userId: string | null;
+  description: string;
+  transactionIds: string[];
+  totalAmountUsd: string | null;
+  patternDetails: Record<string, unknown>;
+  assignedTo: string | null;
+  investigatedAt: Date | null;
+  investigationNotes: string | null;
+  resolvedAt: Date | null;
+  resolutionNotes: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface AMLTransactionCheck {
+  id: string;
+  transactionId: string;
+  institutionId: string | null;
+  userId: string | null;
+  amountUsd: string;
+  transactionType: string;
+  counterpartyId: string | null;
+  isSuspicious: boolean;
+  riskScore: string;
+  rulesTriggered: string[];
+  alertId: string | null;
+  checkedAt: Date;
+}
+
+export interface CheckTransactionDTO {
+  transactionId: string;
+  institutionId?: string;
+  userId?: string;
+  amountUsd: number;
+  transactionType: string;
+  counterpartyId?: string;
+}
+
+export interface InvestigateAlertDTO {
+  assignedTo: string;
+  notes: string;
+}
+
+export interface ResolveAlertDTO {
+  status: 'resolved_suspicious' | 'resolved_legitimate';
+  notes: string;
+}
+
+export interface AMLAlertListQuery {
+  status?: AMLAlertStatus;
+  severity?: AMLAlertSeverity;
+  alertType?: AMLAlertType;
+  institutionId?: string;
+  limit: number;
+  offset: number;
+}
