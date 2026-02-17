@@ -21,6 +21,8 @@ const migration0016 = require('../migrations/0016_asset_verifications.js');
 const migration0017 = require('../migrations/0017_asset_retirements.js');
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const migration0018 = require('../migrations/0018_asset_search_indexes.js');
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const migration0019 = require('../migrations/0019_sanctions_screenings.js');
 
 /** Creates a mock pgm object and returns captured SQL strings after calling fn. */
 function captureSql(fn: (pgm: { sql: (s: string) => void }) => void): string[] {
@@ -466,6 +468,122 @@ describe('Migration 0018: asset_search_indexes', () => {
       expect(all).toContain('DROP INDEX IF EXISTS idx_assets_standard');
       expect(all).toContain('DROP INDEX IF EXISTS idx_assets_available_supply');
       expect(all).toContain('DROP INDEX IF EXISTS idx_assets_type_status_created');
+    });
+  });
+});
+
+// ─── Migration 0019: sanctions_screenings ─────────────────────────────────────
+
+describe('Migration 0019: sanctions_screenings', () => {
+  describe('up', () => {
+    let sqls: string[];
+    beforeEach(() => { sqls = captureSql(migration0019.up); });
+
+    it('creates the screening_entity_type_enum type', () => {
+      const all = joined(sqls);
+      expect(all).toContain('CREATE TYPE screening_entity_type_enum AS ENUM');
+      expect(all).toContain('individual');
+      expect(all).toContain('organization');
+    });
+
+    it('creates the screening_status_enum type', () => {
+      const all = joined(sqls);
+      expect(all).toContain('CREATE TYPE screening_status_enum AS ENUM');
+      expect(all).toContain('clear');
+      expect(all).toContain('potential_match');
+      expect(all).toContain('confirmed_match');
+      expect(all).toContain('false_positive');
+    });
+
+    it('creates the sanctions_screenings table', () => {
+      expect(joined(sqls)).toContain('CREATE TABLE sanctions_screenings');
+    });
+
+    it('includes core screening columns', () => {
+      const all = joined(sqls);
+      expect(all).toContain('entity_type');
+      expect(all).toContain('entity_name');
+      expect(all).toContain('entity_country');
+      expect(all).toContain('entity_date_of_birth');
+      expect(all).toContain('entity_identifiers');
+      expect(all).toContain('status');
+      expect(all).toContain('match_count');
+      expect(all).toContain('highest_score');
+    });
+
+    it('includes review columns', () => {
+      const all = joined(sqls);
+      expect(all).toContain('screened_by');
+      expect(all).toContain('reviewed_by');
+      expect(all).toContain('reviewed_at');
+      expect(all).toContain('review_notes');
+    });
+
+    it('references institutions and users tables', () => {
+      const all = joined(sqls);
+      expect(all).toContain('REFERENCES institutions(id)');
+      expect(all).toContain('REFERENCES users(id)');
+    });
+
+    it('creates the sanctions_screening_matches table', () => {
+      expect(joined(sqls)).toContain('CREATE TABLE sanctions_screening_matches');
+    });
+
+    it('includes match columns', () => {
+      const all = joined(sqls);
+      expect(all).toContain('screening_id');
+      expect(all).toContain('list_name');
+      expect(all).toContain('list_entry_id');
+      expect(all).toContain('matched_name');
+      expect(all).toContain('match_score');
+      expect(all).toContain('match_details');
+    });
+
+    it('creates index on status', () => {
+      expect(joined(sqls)).toContain('idx_sanctions_screenings_status');
+    });
+
+    it('creates index on entity_name', () => {
+      expect(joined(sqls)).toContain('idx_sanctions_screenings_entity_name');
+    });
+
+    it('creates index on institution_id', () => {
+      expect(joined(sqls)).toContain('idx_sanctions_screenings_institution_id');
+    });
+
+    it('creates index on created_at', () => {
+      expect(joined(sqls)).toContain('idx_sanctions_screenings_created_at');
+    });
+
+    it('creates index on screening_id for matches table', () => {
+      expect(joined(sqls)).toContain('idx_sanctions_screening_matches_screening_id');
+    });
+  });
+
+  describe('down', () => {
+    it('drops both tables and both enum types', () => {
+      const sqls = captureSql(migration0019.down);
+      const all = joined(sqls);
+      expect(all).toContain('DROP TABLE IF EXISTS sanctions_screening_matches');
+      expect(all).toContain('DROP TABLE IF EXISTS sanctions_screenings');
+      expect(all).toContain('DROP TYPE IF EXISTS screening_status_enum');
+      expect(all).toContain('DROP TYPE IF EXISTS screening_entity_type_enum');
+    });
+
+    it('drops matches table before screenings table (order matters)', () => {
+      const sqls = captureSql(migration0019.down);
+      const matchesIdx = sqls.findIndex((s) => s.includes('sanctions_screening_matches'));
+      const screeningsIdx = sqls.findIndex((s) => s.includes('DROP TABLE IF EXISTS sanctions_screenings'));
+      expect(matchesIdx).toBeLessThan(screeningsIdx);
+    });
+
+    it('drops tables before types (order matters)', () => {
+      const sqls = captureSql(migration0019.down);
+      const tableIdx = sqls.findIndex((s) => s.includes('DROP TABLE IF EXISTS sanctions_screenings'));
+      const statusIdx = sqls.findIndex((s) => s.includes('screening_status_enum'));
+      const entityIdx = sqls.findIndex((s) => s.includes('screening_entity_type_enum'));
+      expect(tableIdx).toBeLessThan(statusIdx);
+      expect(statusIdx).toBeLessThan(entityIdx);
     });
   });
 });

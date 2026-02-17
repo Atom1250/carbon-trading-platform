@@ -151,6 +151,36 @@
 - 15 VerificationService unit tests, 17 verification route tests, 7 migration tests
 - Commit: `feat(asset): session 3.2 - verification workflow`
 
+### Session 3.3 — Blockchain Integration (`apps/asset-service`)
+
+- `BlockchainService` — ethers.js v6 wrapper for PlatformAssets ERC-1155 contract, fully injectable via `BlockchainConfig` (rpcUrl, privateKey, contractAddress)
+- Methods: `mintToken(to, tokenId, amount, metadataUri)`, `burnToken(from, tokenId, amount)`, `getBalance(address, tokenId)`, `approveKYC(address)`, `isKYCApproved(address)`
+- All blockchain errors mapped to `ServiceUnavailableError` with cause chain
+- Human-readable ABI for contract interactions (no compiled artifacts needed at runtime)
+- Optional in `AssetAppDependencies` — asset service works without blockchain config for testing/development
+- 14 unit tests with fully mocked ethers (Contract, JsonRpcProvider, Wallet, parseUnits)
+- Commit: `feat(asset): session 3.3 - blockchain integration`
+
+### Session 3.4 — Token Minting & Retirement (`apps/asset-service`)
+
+- **Migration 0017** `asset_retirements` — tracks carbon credit retirements with amount (NUMERIC(20,8)), retired_by_user_id FK, reason, transaction_hash; indexes on asset_id and retired_by_user_id
+- `MintingService` — `mintAssetTokens(assetId, recipientAddress)` validates status=verified + no existing tokenId, generates numeric tokenId from UUID, calls BlockchainService.mintToken, updates asset to status=minted with token_id/minting_tx_hash/minted_at
+- `RetirementService` — `retire(assetId, amount, userId, reason)` validates carbon_credit type, minted status, sufficient available_supply; calls BlockchainService.burnToken, inserts retirement record, decrements available_supply + increments retired_supply. `getHistory(assetId)` returns retirements ordered by created_at DESC
+- Routes: `POST /assets/:id/mint` (200, body: recipientAddress), `POST /assets/:id/retire` (200, body: amount/userId/reason), `GET /assets/:id/retirements` (200)
+- `AssetRouterDependencies` extended with `mintingService` and `retirementService`
+- 7 MintingService tests, 13 RetirementService tests, 14 route tests, 6 migration tests
+- Commit: `feat(asset): session 3.4 - minting and retirement`
+
+### Session 3.5 — Asset Listing & Discovery (`apps/asset-service`)
+
+- **Migration 0018** `asset_search_indexes` — 7 indexes for filtering/sorting: vintage (partial), geography (partial), standard (partial), available_supply, created_at DESC, total_supply DESC, composite (asset_type, status, created_at DESC)
+- Enhanced `AssetService.list()` with full filter set: vintage, geography, standard, minSupply/maxSupply (range on available_supply), search (ILIKE on name + description), sortBy (created_at/total_supply/name), sortOrder (asc/desc) with whitelist-based column mapping
+- `getAnalytics()` — GROUP BY asset_type, status → count, totalSupply, availableSupply, retiredSupply
+- `getGeographyBreakdown()` — GROUP BY geography for verified/minted carbon credits with non-null geography → count, availableSupply
+- Routes: enhanced `GET /assets` with all new query params (Zod coercion for numeric params), `GET /assets/analytics` (200, combined analytics + geography breakdown)
+- 17 new service tests (filters, sorting, analytics, geography), 9 new route tests, 8 migration tests
+- Commit: `feat(asset): session 3.5 - listing and discovery`
+
 ---
 
 ## Current Project Structure
@@ -206,21 +236,24 @@ libs/
   config/src/                   # Zod config (loadConfig, parseCorsOrigins)
   common/src/                   # Shared TS types
   database/src/                 # DatabaseClient + migration tests
-  database/migrations/          # 16 migration files (0001-0016, .js format)
+  database/migrations/          # 18 migration files (0001-0018, .js format)
 apps/
   asset-service/
     src/
       app.ts                    # Express factory (createApp)
       server.ts                 # Runtime entry
-      index.ts                  # Public API
+      index.ts                  # Public API + BlockchainService export
       middleware/               # requestId, logging, errorHandler (per-app)
       routes/
-        asset.routes.ts         # POST/GET/PATCH /assets, GET /assets/:id
+        asset.routes.ts         # CRUD, verification, mint, retire, analytics routes
       services/
-        AssetService.ts         # create, findById, update, list
+        AssetService.ts         # create, findById, update, list, getAnalytics, getGeographyBreakdown
         VerificationService.ts  # submitForVerification, approve, reject, getHistory
+        BlockchainService.ts    # ethers.js v6 wrapper (mint, burn, balance, KYC)
+        MintingService.ts       # mintAssetTokens (verify → minted workflow)
+        RetirementService.ts    # retire (burn + record), getHistory
       types/
-        asset.types.ts          # Asset, DTOs, query types
+        asset.types.ts          # Asset, DTOs, query types, blockchain types, analytics types
 apps/
   institution-service/
     src/
@@ -251,12 +284,12 @@ contracts/                      # Standalone Hardhat project (NOT in Nx)
 | logger             | 11    | 100%     |
 | config             | 22    | 100%     |
 | common             | 14    | 100%     |
-| database           | 60    | 100%     |
+| database           | 73    | 100%     |
 | auth-service       | 113   | 100% stmt/fn/line |
 | institution-service| 40    | 100% stmt/fn/line |
-| asset-service      | 78    | 100% stmt/fn/line |
+| asset-service      | 152   | 100% stmt/fn/line |
 | contracts (Hardhat)| 20    | N/A      |
-| **Total**          | **450** |        |
+| **Total**          | **537** |        |
 
 ---
 

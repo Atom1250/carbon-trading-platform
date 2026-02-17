@@ -131,6 +131,7 @@ describe('createApp', () => {
       auth: { url: 'http://localhost:3002', healthPath: '/health', timeout: 30_000 },
       institutions: { url: 'http://localhost:3003', healthPath: '/health', timeout: 30_000 },
       assets: { url: 'http://localhost:3004', healthPath: '/health', timeout: 30_000 },
+      compliance: { url: 'http://localhost:3005', healthPath: '/health', timeout: 30_000 },
     };
 
     const proxyApp = createApp({ ...testDeps, serviceRegistry });
@@ -293,6 +294,53 @@ describe('createApp', () => {
       mockedAxios.mockRejectedValue(err);
 
       const res = await request(proxyApp).get('/api/v1/assets');
+
+      expect(res.status).toBe(503);
+    });
+
+    it('should route GET /api/v1/compliance to compliance service', async () => {
+      mockedAxios.mockResolvedValue({
+        status: 200,
+        data: { data: [{ id: '1', status: 'clear' }] },
+        headers: {},
+      });
+
+      const res = await request(proxyApp).get('/api/v1/compliance/screenings/review-queue');
+
+      expect(res.status).toBe(200);
+      expect(mockedAxios).toHaveBeenCalledWith(
+        expect.objectContaining({
+          url: 'http://localhost:3005/screenings/review-queue',
+        }),
+      );
+    });
+
+    it('should route POST /api/v1/compliance to compliance service', async () => {
+      mockedAxios.mockResolvedValue({
+        status: 201,
+        data: { data: { id: '1', status: 'clear' } },
+        headers: {},
+      });
+
+      const res = await request(proxyApp)
+        .post('/api/v1/compliance/screenings/entity')
+        .send({ entityType: 'individual', entityName: 'John Doe' });
+
+      expect(res.status).toBe(201);
+      expect(mockedAxios).toHaveBeenCalledWith(
+        expect.objectContaining({
+          url: 'http://localhost:3005/screenings/entity',
+          method: 'POST',
+        }),
+      );
+    });
+
+    it('should return 503 when compliance service is down', async () => {
+      const err = new Error('connect ECONNREFUSED');
+      (err as NodeJS.ErrnoException).code = 'ECONNREFUSED';
+      mockedAxios.mockRejectedValue(err);
+
+      const res = await request(proxyApp).get('/api/v1/compliance/screenings/review-queue');
 
       expect(res.status).toBe(503);
     });

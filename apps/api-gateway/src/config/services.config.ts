@@ -21,5 +21,10 @@ export function getServiceRegistry(): Record<string, ServiceConfig> {
       healthPath: '/health',
       timeout: 30_000,
     },
+    compliance: {
+      url: process.env['COMPLIANCE_SERVICE_URL'] ?? 'http://localhost:3005',
+      healthPath: '/health',
+      timeout: 30_000,
+    },
   };
 }

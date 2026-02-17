@@ -77,6 +77,9 @@ export function createApp(deps: AppDependencies): Express {
     if (registry['assets']) {
       app.use('/api/v1/assets', createProxyMiddleware('assets', registry['assets']));
     }
+    if (registry['compliance']) {
+      app.use('/api/v1/compliance', createProxyMiddleware('compliance', registry['compliance']));
+    }
   }
 
   // Catch-all 404 for unrecognised routes

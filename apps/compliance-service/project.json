@@ -1,0 +1,15 @@
+{
+  "name": "@carbon-trading-platform/compliance-service",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/compliance-service/src",
+  "projectType": "application",
+  "targets": {
+    "test": {
+      "executor": "@nx/jest:jest",
+      "options": {
+        "jestConfig": "apps/compliance-service/jest.config.cjs",
+        "passWithNoTests": false
+      }
+    }
+  }
+}
