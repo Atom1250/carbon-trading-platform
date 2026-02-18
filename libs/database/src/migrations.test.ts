@@ -1,5 +1,5 @@
 /**
- * Migration tests for 0011–0025.
+ * Migration tests for 0011–0026.
  *
  * These tests use a mock pgm object to capture SQL statements emitted by each
  * migration's up()/down() functions. No live database is required.
@@ -35,6 +35,8 @@ const migration0023 = require('../migrations/0023_sar_reports.js');
 const migration0024 = require('../migrations/0024_rfq_requests.js');
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const migration0025 = require('../migrations/0025_quotes.js');
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const migration0026 = require('../migrations/0026_trades.js');
 
 /** Creates a mock pgm object and returns captured SQL strings after calling fn. */
 function captureSql(fn: (pgm: { sql: (s: string) => void }) => void): string[] {
@@ -1165,6 +1167,106 @@ describe('Migration 0025: quotes', () => {
       const sqls = captureSql(migration0025.down);
       const tableIdx = sqls.findIndex((s) => s.includes('DROP TABLE IF EXISTS quotes'));
       const typeIdx = sqls.findIndex((s) => s.includes('quote_status_enum'));
+      expect(tableIdx).toBeLessThan(typeIdx);
+    });
+  });
+});
+
+// ─── Migration 0026: trades ───────────────────────────────────────────────────
+
+describe('Migration 0026: trades', () => {
+  describe('up', () => {
+    let sqls: string[];
+    beforeEach(() => { sqls = captureSql(migration0026.up); });
+
+    it('creates the trade_status_enum type', () => {
+      const all = joined(sqls);
+      expect(all).toContain('CREATE TYPE trade_status_enum AS ENUM');
+      expect(all).toContain('pending_settlement');
+      expect(all).toContain('settled');
+      expect(all).toContain('failed');
+    });
+
+    it('creates the trades table', () => {
+      expect(joined(sqls)).toContain('CREATE TABLE trades');
+    });
+
+    it('includes core trade columns', () => {
+      const all = joined(sqls);
+      expect(all).toContain('rfq_id');
+      expect(all).toContain('quote_id');
+      expect(all).toContain('asset_id');
+      expect(all).toContain('buyer_institution_id');
+      expect(all).toContain('seller_institution_id');
+      expect(all).toContain('buyer_user_id');
+      expect(all).toContain('seller_user_id');
+      expect(all).toContain('quantity');
+      expect(all).toContain('price_per_unit');
+      expect(all).toContain('total_amount');
+    });
+
+    it('includes fee columns', () => {
+      const all = joined(sqls);
+      expect(all).toContain('maker_fee');
+      expect(all).toContain('taker_fee');
+      expect(all).toContain('platform_fee');
+    });
+
+    it('includes settlement columns', () => {
+      const all = joined(sqls);
+      expect(all).toContain('settlement_tx_hash');
+      expect(all).toContain('settled_at');
+      expect(all).toContain('failed_at');
+      expect(all).toContain('failure_reason');
+    });
+
+    it('has UNIQUE constraint on quote_id', () => {
+      expect(joined(sqls)).toContain('UNIQUE');
+    });
+
+    it('references rfq_requests, quotes, assets, institutions, and users tables', () => {
+      const all = joined(sqls);
+      expect(all).toContain('REFERENCES rfq_requests(id)');
+      expect(all).toContain('REFERENCES quotes(id)');
+      expect(all).toContain('REFERENCES assets(id)');
+      expect(all).toContain('REFERENCES institutions(id)');
+      expect(all).toContain('REFERENCES users(id)');
+    });
+
+    it('creates indexes', () => {
+      const all = joined(sqls);
+      expect(all).toContain('idx_trades_rfq_id');
+      expect(all).toContain('idx_trades_asset_id');
+      expect(all).toContain('idx_trades_buyer_institution');
+      expect(all).toContain('idx_trades_seller_institution');
+      expect(all).toContain('idx_trades_status');
+      expect(all).toContain('idx_trades_created_at');
+      expect(all).toContain('idx_trades_settled_at');
+    });
+
+    it('creates partial index on settled_at', () => {
+      expect(joined(sqls)).toContain('WHERE settled_at IS NOT NULL');
+    });
+
+    it('creates enum before table (order matters)', () => {
+      const enumIdx = sqls.findIndex((s) => s.includes('trade_status_enum'));
+      const tableIdx = sqls.findIndex((s) => s.includes('CREATE TABLE trades'));
+      expect(enumIdx).toBeLessThan(tableIdx);
+    });
+  });
+
+  describe('down', () => {
+    it('drops table and enum type', () => {
+      const sqls = captureSql(migration0026.down);
+      const all = joined(sqls);
+      expect(all).toContain('DROP TABLE IF EXISTS trades');
+      expect(all).toContain('DROP TYPE IF EXISTS trade_status_enum');
+    });
+
+    it('drops table before type (order matters)', () => {
+      const sqls = captureSql(migration0026.down);
+      const tableIdx = sqls.findIndex((s) => s.includes('DROP TABLE IF EXISTS trades'));
+      const typeIdx = sqls.findIndex((s) => s.includes('trade_status_enum'));
       expect(tableIdx).toBeLessThan(typeIdx);
     });
   });

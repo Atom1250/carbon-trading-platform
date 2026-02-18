@@ -74,3 +74,65 @@ export interface QuoteListQuery {
 export interface AcceptQuoteDTO {
   acceptedByUserId: string;
 }
+
+// ─── Trades & Settlement (Session 5.3) ──────────────────────────────────────
+
+export type TradeStatus = 'pending_settlement' | 'settled' | 'failed';
+
+export interface Trade {
+  id: string;
+  rfqId: string;
+  quoteId: string;
+  assetId: string;
+  buyerInstitutionId: string;
+  sellerInstitutionId: string;
+  buyerUserId: string;
+  sellerUserId: string;
+  quantity: string;
+  pricePerUnit: string;
+  totalAmount: string;
+  makerFee: string;
+  takerFee: string;
+  platformFee: string;
+  status: TradeStatus;
+  settlementTxHash: string | null;
+  settledAt: Date | null;
+  failedAt: Date | null;
+  failureReason: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface TradeListQuery {
+  status?: TradeStatus;
+  assetId?: string;
+  institutionId?: string;
+  limit: number;
+  offset: number;
+}
+
+export interface FeeBreakdown {
+  makerFee: number;
+  takerFee: number;
+  platformFee: number;
+}
+
+export interface FeeReportQuery {
+  startDate?: string;
+  endDate?: string;
+}
+
+export interface FeeReport {
+  totalMakerFees: string;
+  totalTakerFees: string;
+  totalPlatformFees: string;
+  tradeCount: number;
+  startDate: string | null;
+  endDate: string | null;
+}
+
+export interface InstitutionFees {
+  institutionId: string;
+  totalFeesPaid: string;
+  tradeCount: number;
+}
