@@ -7,6 +7,7 @@ import type {
 import type { QuoteService } from './QuoteService.js';
 import type { SettlementService } from './SettlementService.js';
 import type { RFQService } from './RFQService.js';
+import type { TradingLimitsService } from './TradingLimitsService.js';
 
 export class TradeExecutionService {
   constructor(
@@ -14,6 +15,7 @@ export class TradeExecutionService {
     private readonly quoteService: QuoteService,
     private readonly rfqService: RFQService,
     private readonly settlementService: SettlementService,
+    private readonly tradingLimitsService?: TradingLimitsService,
   ) {}
 
   async executeQuoteAcceptance(quoteId: string, acceptedByUserId: string): Promise<Trade> {
@@ -23,10 +25,19 @@ export class TradeExecutionService {
     // 2. Fetch the RFQ for trade creation
     const rfq = await this.rfqService.findById(acceptedQuote.rfqId);
 
-    // 3. Create the trade record with fees
+    // 3. Pre-trade validation (limits, institution status, asset status)
+    if (this.tradingLimitsService) {
+      await this.tradingLimitsService.validatePreTrade({
+        institutionId: rfq.requesterInstitutionId,
+        assetId: rfq.assetId,
+        totalAmount: parseFloat(acceptedQuote.totalAmount),
+      });
+    }
+
+    // 4. Create the trade record with fees
     const trade = await this.settlementService.createTradeFromQuote(acceptedQuote, rfq);
 
-    // 4. Settle immediately (T+0 DvP simulation)
+    // 5. Settle immediately (T+0 DvP simulation)
     const settledTrade = await this.settlementService.settleTradeSync(trade.id);
 
     return settledTrade;

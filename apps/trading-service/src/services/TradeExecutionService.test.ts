@@ -1,5 +1,5 @@
 import { TradeExecutionService } from './TradeExecutionService';
-import { NotFoundError } from '@libs/errors';
+import { NotFoundError, ValidationError } from '@libs/errors';
 
 const TRADE_ID = 'aa0e8400-e29b-41d4-a716-446655440000';
 const RFQ_ID = '550e8400-e29b-41d4-a716-446655440000';
@@ -106,6 +106,15 @@ function makeMockRfqService(overrides: Record<string, jest.Mock> = {}) {
   };
 }
 
+function makeMockTradingLimitsService(overrides: Record<string, jest.Mock> = {}) {
+  return {
+    validatePreTrade: overrides['validatePreTrade'] ?? jest.fn().mockResolvedValue(undefined),
+    getDailyVolume: jest.fn(),
+    getRemainingDailyLimit: jest.fn(),
+    getTradingLimits: jest.fn(),
+  };
+}
+
 function makeMockSettlementService(overrides: Record<string, jest.Mock> = {}) {
   return {
     createTradeFromQuote: overrides['createTradeFromQuote'] ?? jest.fn().mockResolvedValue(PENDING_TRADE),
@@ -206,7 +215,7 @@ describe('TradeExecutionService', () => {
         .rejects.toThrow(NotFoundError);
     });
 
-    it('should execute steps in order: accept → fetch RFQ → create trade → settle', async () => {
+    it('should execute steps in order: accept → fetch RFQ → validate → create trade → settle', async () => {
       const db = makeMockDb();
       const callOrder: string[] = [];
       const quoteService = makeMockQuoteService({
@@ -219,13 +228,90 @@ describe('TradeExecutionService', () => {
         createTradeFromQuote: jest.fn().mockImplementation(() => { callOrder.push('createTrade'); return Promise.resolve(PENDING_TRADE); }),
         settleTradeSync: jest.fn().mockImplementation(() => { callOrder.push('settle'); return Promise.resolve(SETTLED_TRADE); }),
       });
+      const tradingLimitsService = makeMockTradingLimitsService({
+        validatePreTrade: jest.fn().mockImplementation(() => { callOrder.push('validate'); return Promise.resolve(undefined); }),
+      });
       const service = new TradeExecutionService(
-        db as never, quoteService as never, rfqService as never, settlementService as never,
+        db as never, quoteService as never, rfqService as never, settlementService as never, tradingLimitsService as never,
       );
 
       await service.executeQuoteAcceptance(QUOTE_ID, ACCEPTED_USER_ID);
 
-      expect(callOrder).toEqual(['accept', 'fetchRFQ', 'createTrade', 'settle']);
+      expect(callOrder).toEqual(['accept', 'fetchRFQ', 'validate', 'createTrade', 'settle']);
+    });
+  });
+
+  // ─── executeQuoteAcceptance with TradingLimitsService ─────────────────────
+
+  describe('executeQuoteAcceptance with limits', () => {
+    it('should call validatePreTrade with RFQ data', async () => {
+      const db = makeMockDb();
+      const quoteService = makeMockQuoteService();
+      const rfqService = makeMockRfqService();
+      const settlementService = makeMockSettlementService();
+      const tradingLimitsService = makeMockTradingLimitsService();
+      const service = new TradeExecutionService(
+        db as never, quoteService as never, rfqService as never, settlementService as never, tradingLimitsService as never,
+      );
+
+      await service.executeQuoteAcceptance(QUOTE_ID, ACCEPTED_USER_ID);
+
+      expect(tradingLimitsService.validatePreTrade).toHaveBeenCalledWith({
+        institutionId: BUYER_INST_ID,
+        assetId: ASSET_ID,
+        totalAmount: 2500,
+      });
+    });
+
+    it('should reject trade when limits validation fails', async () => {
+      const db = makeMockDb();
+      const quoteService = makeMockQuoteService();
+      const rfqService = makeMockRfqService();
+      const settlementService = makeMockSettlementService();
+      const tradingLimitsService = makeMockTradingLimitsService({
+        validatePreTrade: jest.fn().mockRejectedValue(new ValidationError('Trade amount exceeds daily limit')),
+      });
+      const service = new TradeExecutionService(
+        db as never, quoteService as never, rfqService as never, settlementService as never, tradingLimitsService as never,
+      );
+
+      await expect(service.executeQuoteAcceptance(QUOTE_ID, ACCEPTED_USER_ID))
+        .rejects.toThrow(ValidationError);
+
+      // Should not proceed to create trade or settle
+      expect(settlementService.createTradeFromQuote).not.toHaveBeenCalled();
+      expect(settlementService.settleTradeSync).not.toHaveBeenCalled();
+    });
+
+    it('should still work without tradingLimitsService (backward compatible)', async () => {
+      const db = makeMockDb();
+      const quoteService = makeMockQuoteService();
+      const rfqService = makeMockRfqService();
+      const settlementService = makeMockSettlementService();
+      const service = new TradeExecutionService(
+        db as never, quoteService as never, rfqService as never, settlementService as never,
+      );
+
+      const result = await service.executeQuoteAcceptance(QUOTE_ID, ACCEPTED_USER_ID);
+
+      expect(result.status).toBe('settled');
+    });
+
+    it('should parse totalAmount from quote as number', async () => {
+      const db = makeMockDb();
+      const quoteService = makeMockQuoteService();
+      const rfqService = makeMockRfqService();
+      const settlementService = makeMockSettlementService();
+      const tradingLimitsService = makeMockTradingLimitsService();
+      const service = new TradeExecutionService(
+        db as never, quoteService as never, rfqService as never, settlementService as never, tradingLimitsService as never,
+      );
+
+      await service.executeQuoteAcceptance(QUOTE_ID, ACCEPTED_USER_ID);
+
+      const call = (tradingLimitsService.validatePreTrade as jest.Mock).mock.calls[0][0];
+      expect(typeof call.totalAmount).toBe('number');
+      expect(call.totalAmount).toBe(2500);
     });
   });
 

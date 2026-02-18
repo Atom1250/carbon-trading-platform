@@ -15,6 +15,7 @@ import type { QuoteService } from './services/QuoteService.js';
 import type { SettlementService } from './services/SettlementService.js';
 import type { FeeCalculationService } from './services/FeeCalculationService.js';
 import type { TradeExecutionService } from './services/TradeExecutionService.js';
+import type { TradingLimitsService } from './services/TradingLimitsService.js';
 
 export interface TradingAppDependencies {
   rfqService: RFQService;
@@ -22,6 +23,7 @@ export interface TradingAppDependencies {
   settlementService?: SettlementService;
   feeCalculationService?: FeeCalculationService;
   tradeExecutionService?: TradeExecutionService;
+  tradingLimitsService?: TradingLimitsService;
   corsOrigins?: string;
 }
 

@@ -152,3 +152,26 @@ export interface TradeConfirmation {
   fees: { maker: string; taker: string; platform: string };
   settlement: { txHash: string | null; settledAt: string | null; status: TradeStatus };
 }
+
+// ─── Trading Limits & Validation (Session 5.5) ──────────────────────────────
+
+export interface PreTradeValidation {
+  institutionId: string;
+  assetId: string;
+  totalAmount: number;
+}
+
+export interface TradingLimits {
+  institutionId: string;
+  dailyLimitUsd: string;
+  singleTradeMinUsd: string;
+  singleTradeMaxUsd: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface DailyLimitStatus {
+  limit: number;
+  used: number;
+  remaining: number;
+}
