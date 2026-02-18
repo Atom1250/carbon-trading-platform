@@ -9,16 +9,19 @@ import { errorHandler } from './middleware/errorHandler.js';
 import { createRFQRouter } from './routes/rfq.routes.js';
 import { createQuoteRouter, createQuoteActionsRouter } from './routes/quote.routes.js';
 import { createTradeRouter, createFeeRouter } from './routes/trade.routes.js';
+import { createConfirmationRouter } from './routes/confirmation.routes.js';
 import type { RFQService } from './services/RFQService.js';
 import type { QuoteService } from './services/QuoteService.js';
 import type { SettlementService } from './services/SettlementService.js';
 import type { FeeCalculationService } from './services/FeeCalculationService.js';
+import type { TradeExecutionService } from './services/TradeExecutionService.js';
 
 export interface TradingAppDependencies {
   rfqService: RFQService;
   quoteService?: QuoteService;
   settlementService?: SettlementService;
   feeCalculationService?: FeeCalculationService;
+  tradeExecutionService?: TradeExecutionService;
   corsOrigins?: string;
 }
 
@@ -55,12 +58,19 @@ export function createApp(deps: TradingAppDependencies): Express {
     }));
     app.use('/quotes', createQuoteActionsRouter({
       quoteService: deps.quoteService,
+      tradeExecutionService: deps.tradeExecutionService,
     }));
   }
 
   if (deps.settlementService) {
     app.use('/trades', createTradeRouter({
       settlementService: deps.settlementService,
+    }));
+  }
+
+  if (deps.tradeExecutionService) {
+    app.use('/trades', createConfirmationRouter({
+      tradeExecutionService: deps.tradeExecutionService,
     }));
   }
 

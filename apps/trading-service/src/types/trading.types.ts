@@ -136,3 +136,19 @@ export interface InstitutionFees {
   totalFeesPaid: string;
   tradeCount: number;
 }
+
+// ─── Trade Orchestration & Confirmations (Session 5.4) ──────────────────────
+
+export interface TradeConfirmation {
+  tradeId: string;
+  tradeDate: string;
+  settlementDate: string | null;
+  buyer: { institutionId: string; userId: string };
+  seller: { institutionId: string; userId: string };
+  asset: { id: string; name: string; type: string };
+  quantity: string;
+  pricePerUnit: string;
+  totalAmount: string;
+  fees: { maker: string; taker: string; platform: string };
+  settlement: { txHash: string | null; settledAt: string | null; status: TradeStatus };
+}

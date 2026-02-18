@@ -3,6 +3,7 @@ import type { NextFunction, Request, Response } from 'express';
 import { z } from 'zod';
 import { ValidationError } from '@libs/errors';
 import type { QuoteService } from '../services/QuoteService.js';
+import type { TradeExecutionService } from '../services/TradeExecutionService.js';
 
 const submitQuoteSchema = z.object({
   quoterInstitutionId: z.string().uuid('Quoter institution ID must be a valid UUID'),
@@ -40,6 +41,11 @@ function parseBody<T>(
 
 export interface QuoteRouterDependencies {
   quoteService: QuoteService;
+}
+
+export interface QuoteActionsRouterDependencies {
+  quoteService: QuoteService;
+  tradeExecutionService?: TradeExecutionService;
 }
 
 export function createQuoteRouter(deps: QuoteRouterDependencies): Router {
@@ -83,8 +89,8 @@ export function createQuoteRouter(deps: QuoteRouterDependencies): Router {
   return router;
 }
 
-export function createQuoteActionsRouter(deps: QuoteRouterDependencies): Router {
-  const { quoteService: service } = deps;
+export function createQuoteActionsRouter(deps: QuoteActionsRouterDependencies): Router {
+  const { quoteService: service, tradeExecutionService } = deps;
   const router = Router();
 
   // POST /quotes/:id/accept
@@ -93,8 +99,18 @@ export function createQuoteActionsRouter(deps: QuoteRouterDependencies): Router 
       const data = parseBody(acceptQuoteSchema, req.body, next);
       if (!data) return;
 
-      const quote = await service.acceptQuote(req.params['id']!, data.acceptedByUserId);
-      res.status(200).json({ data: quote });
+      if (tradeExecutionService) {
+        // Full pipeline: accept → create trade → settle
+        const trade = await tradeExecutionService.executeQuoteAcceptance(
+          req.params['id']!,
+          data.acceptedByUserId,
+        );
+        res.status(200).json({ data: trade });
+      } else {
+        // Fallback: just accept the quote
+        const quote = await service.acceptQuote(req.params['id']!, data.acceptedByUserId);
+        res.status(200).json({ data: quote });
+      }
     } catch (err) {
       next(err);
     }

@@ -6,6 +6,7 @@ import { RFQService } from './services/RFQService.js';
 import { QuoteService } from './services/QuoteService.js';
 import { FeeCalculationService } from './services/FeeCalculationService.js';
 import { SettlementService } from './services/SettlementService.js';
+import { TradeExecutionService } from './services/TradeExecutionService.js';
 
 const logger = createLogger('trading-service');
 
@@ -16,12 +17,14 @@ const rfqService = new RFQService(db);
 const quoteService = new QuoteService(db);
 const feeCalculationService = new FeeCalculationService(db);
 const settlementService = new SettlementService(db, feeCalculationService);
+const tradeExecutionService = new TradeExecutionService(db, quoteService, rfqService, settlementService);
 
 const app = createApp({
   rfqService,
   quoteService,
   settlementService,
   feeCalculationService,
+  tradeExecutionService,
   corsOrigins: config.CORS_ORIGINS,
 });
 const port = config.PORT ?? 3006;
