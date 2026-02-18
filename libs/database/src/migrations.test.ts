@@ -1,5 +1,5 @@
 /**
- * Migration tests for 0011–0022.
+ * Migration tests for 0011–0023.
  *
  * These tests use a mock pgm object to capture SQL statements emitted by each
  * migration's up()/down() functions. No live database is required.
@@ -29,6 +29,8 @@ const migration0020 = require('../migrations/0020_aml_alerts.js');
 const migration0021 = require('../migrations/0021_kyc_documents_expiry.js');
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const migration0022 = require('../migrations/0022_pep_checks.js');
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const migration0023 = require('../migrations/0023_sar_reports.js');
 
 /** Creates a mock pgm object and returns captured SQL strings after calling fn. */
 function captureSql(fn: (pgm: { sql: (s: string) => void }) => void): string[] {
@@ -872,6 +874,115 @@ describe('Migration 0022: pep_checks', () => {
       const categoryIdx = sqls.findIndex((s) => s.includes('pep_category_enum'));
       expect(tableIdx).toBeLessThan(statusIdx);
       expect(tableIdx).toBeLessThan(categoryIdx);
+    });
+  });
+});
+
+// ─── Migration 0023: sar_reports ──────────────────────────────────────────────
+
+describe('Migration 0023: sar_reports', () => {
+  describe('up', () => {
+    let sqls: string[];
+    beforeEach(() => { sqls = captureSql(migration0023.up); });
+
+    it('creates the sar_status_enum type', () => {
+      const all = joined(sqls);
+      expect(all).toContain('CREATE TYPE sar_status_enum');
+      expect(all).toContain('draft');
+      expect(all).toContain('pending_review');
+      expect(all).toContain('approved');
+      expect(all).toContain('filed');
+      expect(all).toContain('rejected');
+    });
+
+    it('creates the sar_trigger_type_enum type', () => {
+      const all = joined(sqls);
+      expect(all).toContain('CREATE TYPE sar_trigger_type_enum');
+      expect(all).toContain('aml_alert');
+      expect(all).toContain('sanctions_match');
+      expect(all).toContain('pep_edd_failed');
+      expect(all).toContain('manual');
+      expect(all).toContain('threshold_exceeded');
+    });
+
+    it('creates the sar_reports table', () => {
+      expect(joined(sqls)).toContain('CREATE TABLE sar_reports');
+    });
+
+    it('includes core SAR columns', () => {
+      const all = joined(sqls);
+      expect(all).toContain('subject_type');
+      expect(all).toContain('subject_id');
+      expect(all).toContain('subject_name');
+      expect(all).toContain('trigger_type');
+      expect(all).toContain('trigger_reference_id');
+      expect(all).toContain('narrative');
+      expect(all).toContain('supporting_data');
+    });
+
+    it('includes financial columns', () => {
+      const all = joined(sqls);
+      expect(all).toContain('suspicious_amount_usd');
+      expect(all).toContain('activity_start_date');
+      expect(all).toContain('activity_end_date');
+    });
+
+    it('includes review and filing columns', () => {
+      const all = joined(sqls);
+      expect(all).toContain('reviewed_by');
+      expect(all).toContain('reviewed_at');
+      expect(all).toContain('review_notes');
+      expect(all).toContain('filed_at');
+      expect(all).toContain('filing_reference');
+      expect(all).toContain('filing_confirmation');
+    });
+
+    it('references institutions and users tables', () => {
+      const all = joined(sqls);
+      expect(all).toContain('REFERENCES institutions(id)');
+      expect(all).toContain('REFERENCES users(id)');
+    });
+
+    it('creates indexes', () => {
+      const all = joined(sqls);
+      expect(all).toContain('idx_sar_reports_status');
+      expect(all).toContain('idx_sar_reports_institution_id');
+      expect(all).toContain('idx_sar_reports_trigger_type');
+      expect(all).toContain('idx_sar_reports_subject');
+      expect(all).toContain('idx_sar_reports_created_at');
+      expect(all).toContain('idx_sar_reports_filed_at');
+    });
+
+    it('creates partial index on filed_at', () => {
+      const all = joined(sqls);
+      expect(all).toContain('WHERE filed_at IS NOT NULL');
+    });
+
+    it('creates enums before table (order matters)', () => {
+      const statusIdx = sqls.findIndex((s) => s.includes('sar_status_enum'));
+      const triggerIdx = sqls.findIndex((s) => s.includes('sar_trigger_type_enum'));
+      const tableIdx = sqls.findIndex((s) => s.includes('CREATE TABLE sar_reports'));
+      expect(statusIdx).toBeLessThan(tableIdx);
+      expect(triggerIdx).toBeLessThan(tableIdx);
+    });
+  });
+
+  describe('down', () => {
+    it('drops table and both enum types', () => {
+      const sqls = captureSql(migration0023.down);
+      const all = joined(sqls);
+      expect(all).toContain('DROP TABLE IF EXISTS sar_reports');
+      expect(all).toContain('DROP TYPE IF EXISTS sar_status_enum');
+      expect(all).toContain('DROP TYPE IF EXISTS sar_trigger_type_enum');
+    });
+
+    it('drops table before types (order matters)', () => {
+      const sqls = captureSql(migration0023.down);
+      const tableIdx = sqls.findIndex((s) => s.includes('DROP TABLE IF EXISTS sar_reports'));
+      const statusIdx = sqls.findIndex((s) => s.includes('sar_status_enum'));
+      const triggerIdx = sqls.findIndex((s) => s.includes('sar_trigger_type_enum'));
+      expect(tableIdx).toBeLessThan(statusIdx);
+      expect(tableIdx).toBeLessThan(triggerIdx);
     });
   });
 });

@@ -233,3 +233,67 @@ export interface PEPCheckListQuery {
   limit: number;
   offset: number;
 }
+
+// ─── SAR Generation & Reporting (Session 4.5) ────────────────────────────────
+
+export type SARStatus = 'draft' | 'pending_review' | 'approved' | 'filed' | 'rejected';
+export type SARTriggerType = 'aml_alert' | 'sanctions_match' | 'pep_edd_failed' | 'manual' | 'threshold_exceeded';
+
+export interface SARReport {
+  id: string;
+  institutionId: string | null;
+  subjectType: string;
+  subjectId: string;
+  subjectName: string;
+  triggerType: SARTriggerType;
+  triggerReferenceId: string | null;
+  status: SARStatus;
+  suspiciousAmountUsd: string | null;
+  activityStartDate: Date | null;
+  activityEndDate: Date | null;
+  narrative: string;
+  supportingData: Record<string, unknown>;
+  generatedBy: string | null;
+  reviewedBy: string | null;
+  reviewedAt: Date | null;
+  reviewNotes: string | null;
+  filedAt: Date | null;
+  filingReference: string | null;
+  filingConfirmation: Record<string, unknown> | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface GenerateSARDTO {
+  institutionId?: string;
+  subjectType: string;
+  subjectId: string;
+  subjectName: string;
+  triggerType: SARTriggerType;
+  triggerReferenceId?: string;
+  suspiciousAmountUsd?: number;
+  activityStartDate?: string;
+  activityEndDate?: string;
+  narrative: string;
+  supportingData?: Record<string, unknown>;
+  generatedBy?: string;
+}
+
+export interface ReviewSARDTO {
+  reviewedBy: string;
+  status: 'approved' | 'rejected';
+  notes: string;
+}
+
+export interface FileSARDTO {
+  filingReference: string;
+  filingConfirmation?: Record<string, unknown>;
+}
+
+export interface SARListQuery {
+  status?: SARStatus;
+  triggerType?: SARTriggerType;
+  institutionId?: string;
+  limit: number;
+  offset: number;
+}

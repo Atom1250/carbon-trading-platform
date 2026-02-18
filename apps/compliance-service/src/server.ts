@@ -6,6 +6,7 @@ import { SanctionsScreeningService } from './services/SanctionsScreeningService.
 import { AMLMonitoringService } from './services/AMLMonitoringService.js';
 import { KYCDocumentService } from './services/KYCDocumentService.js';
 import { PEPCheckingService } from './services/PEPCheckingService.js';
+import { SARService } from './services/SARService.js';
 
 const logger = createLogger('compliance-service');
 
@@ -16,12 +17,14 @@ const sanctionsScreeningService = new SanctionsScreeningService(db);
 const amlMonitoringService = new AMLMonitoringService(db);
 const kycDocumentService = new KYCDocumentService(db);
 const pepCheckingService = new PEPCheckingService(db);
+const sarService = new SARService(db);
 
 const app = createApp({
   sanctionsScreeningService,
   amlMonitoringService,
   kycDocumentService,
   pepCheckingService,
+  sarService,
   corsOrigins: config.CORS_ORIGINS,
 });
 const port = config.PORT ?? 3005;

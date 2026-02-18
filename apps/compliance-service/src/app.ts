@@ -10,16 +10,19 @@ import { createScreeningRouter } from './routes/screening.routes.js';
 import { createAMLRouter } from './routes/aml.routes.js';
 import { createKYCRouter } from './routes/kyc.routes.js';
 import { createPEPRouter } from './routes/pep.routes.js';
+import { createSARRouter } from './routes/sar.routes.js';
 import type { SanctionsScreeningService } from './services/SanctionsScreeningService.js';
 import type { AMLMonitoringService } from './services/AMLMonitoringService.js';
 import type { KYCDocumentService } from './services/KYCDocumentService.js';
 import type { PEPCheckingService } from './services/PEPCheckingService.js';
+import type { SARService } from './services/SARService.js';
 
 export interface ComplianceAppDependencies {
   sanctionsScreeningService: SanctionsScreeningService;
   amlMonitoringService?: AMLMonitoringService;
   kycDocumentService?: KYCDocumentService;
   pepCheckingService?: PEPCheckingService;
+  sarService?: SARService;
   corsOrigins?: string;
 }
 
@@ -65,6 +68,12 @@ export function createApp(deps: ComplianceAppDependencies): Express {
   if (deps.pepCheckingService) {
     app.use('/pep', createPEPRouter({
       pepCheckingService: deps.pepCheckingService,
+    }));
+  }
+
+  if (deps.sarService) {
+    app.use('/sar', createSARRouter({
+      sarService: deps.sarService,
     }));
   }
 

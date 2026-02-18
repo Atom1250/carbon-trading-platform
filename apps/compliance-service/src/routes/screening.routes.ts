@@ -12,7 +12,7 @@ const screenEntitySchema = z.object({
   entityName: z.string().min(1, 'Entity name is required').max(500),
   entityCountry: z.string().length(2, 'Country code must be 2 characters').optional(),
   entityDateOfBirth: z.string().date('Must be a valid date (YYYY-MM-DD)').optional(),
-  entityIdentifiers: z.record(z.unknown()).optional(),
+  entityIdentifiers: z.record(z.string(), z.any()).optional(),
   institutionId: z.string().uuid().optional(),
   userId: z.string().uuid().optional(),
   screenedBy: z.string().uuid().optional(),
