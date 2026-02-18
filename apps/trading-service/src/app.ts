@@ -10,12 +10,14 @@ import { createRFQRouter } from './routes/rfq.routes.js';
 import { createQuoteRouter, createQuoteActionsRouter } from './routes/quote.routes.js';
 import { createTradeRouter, createFeeRouter } from './routes/trade.routes.js';
 import { createConfirmationRouter } from './routes/confirmation.routes.js';
+import { createOrderBookRouter } from './routes/orderbook.routes.js';
 import type { RFQService } from './services/RFQService.js';
 import type { QuoteService } from './services/QuoteService.js';
 import type { SettlementService } from './services/SettlementService.js';
 import type { FeeCalculationService } from './services/FeeCalculationService.js';
 import type { TradeExecutionService } from './services/TradeExecutionService.js';
 import type { TradingLimitsService } from './services/TradingLimitsService.js';
+import type { OrderBookService } from './services/OrderBookService.js';
 
 export interface TradingAppDependencies {
   rfqService: RFQService;
@@ -24,6 +26,7 @@ export interface TradingAppDependencies {
   feeCalculationService?: FeeCalculationService;
   tradeExecutionService?: TradeExecutionService;
   tradingLimitsService?: TradingLimitsService;
+  orderBookService?: OrderBookService;
   corsOrigins?: string;
 }
 
@@ -79,6 +82,12 @@ export function createApp(deps: TradingAppDependencies): Express {
   if (deps.feeCalculationService) {
     app.use('/fees', createFeeRouter({
       feeCalculationService: deps.feeCalculationService,
+    }));
+  }
+
+  if (deps.orderBookService) {
+    app.use('/orderbook', createOrderBookRouter({
+      orderBookService: deps.orderBookService,
     }));
   }
 

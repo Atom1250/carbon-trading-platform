@@ -8,6 +8,7 @@ import { FeeCalculationService } from './services/FeeCalculationService.js';
 import { SettlementService } from './services/SettlementService.js';
 import { TradeExecutionService } from './services/TradeExecutionService.js';
 import { TradingLimitsService } from './services/TradingLimitsService.js';
+import { OrderBookService } from './services/OrderBookService.js';
 
 const logger = createLogger('trading-service');
 
@@ -20,6 +21,7 @@ const feeCalculationService = new FeeCalculationService(db);
 const settlementService = new SettlementService(db, feeCalculationService);
 const tradingLimitsService = new TradingLimitsService(db);
 const tradeExecutionService = new TradeExecutionService(db, quoteService, rfqService, settlementService, tradingLimitsService);
+const orderBookService = new OrderBookService(db);
 
 const app = createApp({
   rfqService,
@@ -28,6 +30,7 @@ const app = createApp({
   feeCalculationService,
   tradeExecutionService,
   tradingLimitsService,
+  orderBookService,
   corsOrigins: config.CORS_ORIGINS,
 });
 const port = config.PORT ?? 3006;

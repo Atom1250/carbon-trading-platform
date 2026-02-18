@@ -1,5 +1,5 @@
 /**
- * Migration tests for 0011–0026.
+ * Migration tests for 0011–0027.
  *
  * These tests use a mock pgm object to capture SQL statements emitted by each
  * migration's up()/down() functions. No live database is required.
@@ -37,6 +37,8 @@ const migration0024 = require('../migrations/0024_rfq_requests.js');
 const migration0025 = require('../migrations/0025_quotes.js');
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const migration0026 = require('../migrations/0026_trades.js');
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const migration0027 = require('../migrations/0027_order_book.js');
 
 /** Creates a mock pgm object and returns captured SQL strings after calling fn. */
 function captureSql(fn: (pgm: { sql: (s: string) => void }) => void): string[] {
@@ -1268,6 +1270,95 @@ describe('Migration 0026: trades', () => {
       const tableIdx = sqls.findIndex((s) => s.includes('DROP TABLE IF EXISTS trades'));
       const typeIdx = sqls.findIndex((s) => s.includes('trade_status_enum'));
       expect(tableIdx).toBeLessThan(typeIdx);
+    });
+  });
+});
+
+// ─── Migration 0027: order_book_entries ────────────────────────────────────────
+
+describe('Migration 0027: order_book_entries', () => {
+  describe('up', () => {
+    let sqls: string[];
+    beforeEach(() => { sqls = captureSql(migration0027.up); });
+
+    it('creates the order_side_enum type', () => {
+      const all = joined(sqls);
+      expect(all).toContain('CREATE TYPE order_side_enum AS ENUM');
+      expect(all).toContain('bid');
+      expect(all).toContain('ask');
+    });
+
+    it('creates the order_status_enum type', () => {
+      const all = joined(sqls);
+      expect(all).toContain('CREATE TYPE order_status_enum AS ENUM');
+      expect(all).toContain('open');
+      expect(all).toContain('filled');
+      expect(all).toContain('partially_filled');
+      expect(all).toContain('cancelled');
+      expect(all).toContain('expired');
+    });
+
+    it('creates the order_book_entries table', () => {
+      expect(joined(sqls)).toContain('CREATE TABLE order_book_entries');
+    });
+
+    it('includes core order columns', () => {
+      const all = joined(sqls);
+      expect(all).toContain('asset_id');
+      expect(all).toContain('institution_id');
+      expect(all).toContain('user_id');
+      expect(all).toContain('side');
+      expect(all).toContain('price');
+      expect(all).toContain('quantity');
+      expect(all).toContain('filled_quantity');
+      expect(all).toContain('status');
+      expect(all).toContain('expires_at');
+    });
+
+    it('references assets, institutions, and users tables', () => {
+      const all = joined(sqls);
+      expect(all).toContain('REFERENCES assets(id)');
+      expect(all).toContain('REFERENCES institutions(id)');
+      expect(all).toContain('REFERENCES users(id)');
+    });
+
+    it('creates indexes', () => {
+      const all = joined(sqls);
+      expect(all).toContain('idx_order_book_asset_id');
+      expect(all).toContain('idx_order_book_status');
+      expect(all).toContain('idx_order_book_side_price');
+      expect(all).toContain('idx_order_book_created_at');
+    });
+
+    it('creates composite index on asset_id, side, price', () => {
+      expect(joined(sqls)).toContain('order_book_entries(asset_id, side, price)');
+    });
+
+    it('creates enums before table (order matters)', () => {
+      const sideEnumIdx = sqls.findIndex((s) => s.includes('order_side_enum'));
+      const statusEnumIdx = sqls.findIndex((s) => s.includes('order_status_enum'));
+      const tableIdx = sqls.findIndex((s) => s.includes('CREATE TABLE order_book_entries'));
+      expect(sideEnumIdx).toBeLessThan(tableIdx);
+      expect(statusEnumIdx).toBeLessThan(tableIdx);
+    });
+  });
+
+  describe('down', () => {
+    it('drops table and both enum types', () => {
+      const sqls = captureSql(migration0027.down);
+      const all = joined(sqls);
+      expect(all).toContain('DROP TABLE IF EXISTS order_book_entries');
+      expect(all).toContain('DROP TYPE IF EXISTS order_status_enum');
+      expect(all).toContain('DROP TYPE IF EXISTS order_side_enum');
+    });
+
+    it('drops table before types (order matters)', () => {
+      const sqls = captureSql(migration0027.down);
+      const tableIdx = sqls.findIndex((s) => s.includes('DROP TABLE IF EXISTS order_book_entries'));
+      const statusIdx = sqls.findIndex((s) => s.includes('order_status_enum'));
+      const sideIdx = sqls.findIndex((s) => s.includes('order_side_enum'));
+      expect(tableIdx).toBeLessThan(statusIdx);
+      expect(tableIdx).toBeLessThan(sideIdx);
     });
   });
 });

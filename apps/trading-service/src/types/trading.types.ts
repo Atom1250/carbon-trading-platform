@@ -175,3 +175,42 @@ export interface DailyLimitStatus {
   used: number;
   remaining: number;
 }
+
+// ─── Order Book (Session 5.6) ────────────────────────────────────────────────
+
+export type OrderSide = 'bid' | 'ask';
+export type OrderStatus = 'open' | 'filled' | 'partially_filled' | 'cancelled' | 'expired';
+
+export interface OrderBookEntry {
+  id: string;
+  assetId: string;
+  institutionId: string;
+  userId: string;
+  side: OrderSide;
+  price: string;
+  quantity: string;
+  filledQuantity: string;
+  status: OrderStatus;
+  expiresAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface PriceLevel {
+  price: string;
+  quantity: string;
+  orderCount: number;
+}
+
+export interface OrderBook {
+  assetId: string;
+  bids: PriceLevel[];
+  asks: PriceLevel[];
+  spread: number | null;
+}
+
+export interface OrderBookSpread {
+  bestBid: number | null;
+  bestAsk: number | null;
+  spread: number | null;
+}
