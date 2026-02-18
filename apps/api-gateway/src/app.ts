@@ -80,6 +80,9 @@ export function createApp(deps: AppDependencies): Express {
     if (registry['compliance']) {
       app.use('/api/v1/compliance', createProxyMiddleware('compliance', registry['compliance']));
     }
+    if (registry['trading']) {
+      app.use('/api/v1/trading', createProxyMiddleware('trading', registry['trading']));
+    }
   }
 
   // Catch-all 404 for unrecognised routes

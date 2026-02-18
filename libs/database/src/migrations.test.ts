@@ -31,6 +31,8 @@ const migration0021 = require('../migrations/0021_kyc_documents_expiry.js');
 const migration0022 = require('../migrations/0022_pep_checks.js');
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const migration0023 = require('../migrations/0023_sar_reports.js');
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const migration0024 = require('../migrations/0024_rfq_requests.js');
 
 /** Creates a mock pgm object and returns captured SQL strings after calling fn. */
 function captureSql(fn: (pgm: { sql: (s: string) => void }) => void): string[] {
@@ -983,6 +985,101 @@ describe('Migration 0023: sar_reports', () => {
       const triggerIdx = sqls.findIndex((s) => s.includes('sar_trigger_type_enum'));
       expect(tableIdx).toBeLessThan(statusIdx);
       expect(tableIdx).toBeLessThan(triggerIdx);
+    });
+  });
+});
+
+// ─── Migration 0024: rfq_requests ─────────────────────────────────────────────
+
+describe('Migration 0024: rfq_requests', () => {
+  describe('up', () => {
+    let sqls: string[];
+    beforeEach(() => { sqls = captureSql(migration0024.up); });
+
+    it('creates the rfq_side_enum type', () => {
+      const all = joined(sqls);
+      expect(all).toContain('CREATE TYPE rfq_side_enum AS ENUM');
+      expect(all).toContain('buy');
+      expect(all).toContain('sell');
+    });
+
+    it('creates the rfq_status_enum type', () => {
+      const all = joined(sqls);
+      expect(all).toContain('CREATE TYPE rfq_status_enum AS ENUM');
+      expect(all).toContain('open');
+      expect(all).toContain('quoted');
+      expect(all).toContain('accepted');
+      expect(all).toContain('expired');
+      expect(all).toContain('cancelled');
+    });
+
+    it('creates the rfq_requests table', () => {
+      expect(joined(sqls)).toContain('CREATE TABLE rfq_requests');
+    });
+
+    it('includes core RFQ columns', () => {
+      const all = joined(sqls);
+      expect(all).toContain('asset_id');
+      expect(all).toContain('requester_institution_id');
+      expect(all).toContain('requester_user_id');
+      expect(all).toContain('side');
+      expect(all).toContain('quantity');
+      expect(all).toContain('status');
+      expect(all).toContain('expires_at');
+    });
+
+    it('includes cancellation columns', () => {
+      const all = joined(sqls);
+      expect(all).toContain('cancelled_at');
+      expect(all).toContain('cancellation_reason');
+    });
+
+    it('references assets, institutions, and users tables', () => {
+      const all = joined(sqls);
+      expect(all).toContain('REFERENCES assets(id)');
+      expect(all).toContain('REFERENCES institutions(id)');
+      expect(all).toContain('REFERENCES users(id)');
+    });
+
+    it('creates indexes', () => {
+      const all = joined(sqls);
+      expect(all).toContain('idx_rfq_requests_asset_id');
+      expect(all).toContain('idx_rfq_requests_requester_institution');
+      expect(all).toContain('idx_rfq_requests_status');
+      expect(all).toContain('idx_rfq_requests_expires_at');
+      expect(all).toContain('idx_rfq_requests_created_at');
+    });
+
+    it('creates partial index on expires_at for open RFQs', () => {
+      const all = joined(sqls);
+      expect(all).toContain("WHERE status = 'open'");
+    });
+
+    it('creates enums before table (order matters)', () => {
+      const sideIdx = sqls.findIndex((s) => s.includes('rfq_side_enum'));
+      const statusIdx = sqls.findIndex((s) => s.includes('rfq_status_enum'));
+      const tableIdx = sqls.findIndex((s) => s.includes('CREATE TABLE rfq_requests'));
+      expect(sideIdx).toBeLessThan(tableIdx);
+      expect(statusIdx).toBeLessThan(tableIdx);
+    });
+  });
+
+  describe('down', () => {
+    it('drops table and both enum types', () => {
+      const sqls = captureSql(migration0024.down);
+      const all = joined(sqls);
+      expect(all).toContain('DROP TABLE IF EXISTS rfq_requests');
+      expect(all).toContain('DROP TYPE IF EXISTS rfq_status_enum');
+      expect(all).toContain('DROP TYPE IF EXISTS rfq_side_enum');
+    });
+
+    it('drops table before types (order matters)', () => {
+      const sqls = captureSql(migration0024.down);
+      const tableIdx = sqls.findIndex((s) => s.includes('DROP TABLE IF EXISTS rfq_requests'));
+      const statusIdx = sqls.findIndex((s) => s.includes('rfq_status_enum'));
+      const sideIdx = sqls.findIndex((s) => s.includes('rfq_side_enum'));
+      expect(tableIdx).toBeLessThan(statusIdx);
+      expect(tableIdx).toBeLessThan(sideIdx);
     });
   });
 });

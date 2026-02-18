@@ -132,6 +132,7 @@ describe('createApp', () => {
       institutions: { url: 'http://localhost:3003', healthPath: '/health', timeout: 30_000 },
       assets: { url: 'http://localhost:3004', healthPath: '/health', timeout: 30_000 },
       compliance: { url: 'http://localhost:3005', healthPath: '/health', timeout: 30_000 },
+      trading: { url: 'http://localhost:3006', healthPath: '/health', timeout: 30_000 },
     };
 
     const proxyApp = createApp({ ...testDeps, serviceRegistry });
@@ -341,6 +342,53 @@ describe('createApp', () => {
       mockedAxios.mockRejectedValue(err);
 
       const res = await request(proxyApp).get('/api/v1/compliance/screenings/review-queue');
+
+      expect(res.status).toBe(503);
+    });
+
+    it('should route GET /api/v1/trading to trading service', async () => {
+      mockedAxios.mockResolvedValue({
+        status: 200,
+        data: { data: [{ id: '1', status: 'open' }] },
+        headers: {},
+      });
+
+      const res = await request(proxyApp).get('/api/v1/trading/rfq');
+
+      expect(res.status).toBe(200);
+      expect(mockedAxios).toHaveBeenCalledWith(
+        expect.objectContaining({
+          url: 'http://localhost:3006/rfq',
+        }),
+      );
+    });
+
+    it('should route POST /api/v1/trading to trading service', async () => {
+      mockedAxios.mockResolvedValue({
+        status: 201,
+        data: { data: { id: '1', status: 'open' } },
+        headers: {},
+      });
+
+      const res = await request(proxyApp)
+        .post('/api/v1/trading/rfq')
+        .send({ assetId: '123', side: 'buy', quantity: 100 });
+
+      expect(res.status).toBe(201);
+      expect(mockedAxios).toHaveBeenCalledWith(
+        expect.objectContaining({
+          url: 'http://localhost:3006/rfq',
+          method: 'POST',
+        }),
+      );
+    });
+
+    it('should return 503 when trading service is down', async () => {
+      const err = new Error('connect ECONNREFUSED');
+      (err as NodeJS.ErrnoException).code = 'ECONNREFUSED';
+      mockedAxios.mockRejectedValue(err);
+
+      const res = await request(proxyApp).get('/api/v1/trading/rfq');
 
       expect(res.status).toBe(503);
     });

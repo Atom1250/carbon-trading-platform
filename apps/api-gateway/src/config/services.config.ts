@@ -26,5 +26,10 @@ export function getServiceRegistry(): Record<string, ServiceConfig> {
       healthPath: '/health',
       timeout: 30_000,
     },
+    trading: {
+      url: process.env['TRADING_SERVICE_URL'] ?? 'http://localhost:3006',
+      healthPath: '/health',
+      timeout: 30_000,
+    },
   };
 }

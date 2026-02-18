@@ -1,0 +1,15 @@
+{
+  "name": "@carbon-trading-platform/trading-service",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/trading-service/src",
+  "projectType": "application",
+  "targets": {
+    "test": {
+      "executor": "@nx/jest:jest",
+      "options": {
+        "jestConfig": "apps/trading-service/jest.config.cjs",
+        "passWithNoTests": false
+      }
+    }
+  }
+}
