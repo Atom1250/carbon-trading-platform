@@ -7,10 +7,13 @@ import { requestIdMiddleware } from './middleware/requestId.js';
 import { loggingMiddleware } from './middleware/logging.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { createRFQRouter } from './routes/rfq.routes.js';
+import { createQuoteRouter, createQuoteActionsRouter } from './routes/quote.routes.js';
 import type { RFQService } from './services/RFQService.js';
+import type { QuoteService } from './services/QuoteService.js';
 
 export interface TradingAppDependencies {
   rfqService: RFQService;
+  quoteService?: QuoteService;
   corsOrigins?: string;
 }
 
@@ -40,6 +43,15 @@ export function createApp(deps: TradingAppDependencies): Express {
   app.use('/rfq', createRFQRouter({
     rfqService: deps.rfqService,
   }));
+
+  if (deps.quoteService) {
+    app.use('/rfq/:rfqId/quotes', createQuoteRouter({
+      quoteService: deps.quoteService,
+    }));
+    app.use('/quotes', createQuoteActionsRouter({
+      quoteService: deps.quoteService,
+    }));
+  }
 
   app.get('/health', (_req, res) => {
     res.status(200).json({ status: 'healthy', service: 'trading-service' });

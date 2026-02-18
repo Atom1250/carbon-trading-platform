@@ -1,5 +1,5 @@
 /**
- * Migration tests for 0011–0023.
+ * Migration tests for 0011–0025.
  *
  * These tests use a mock pgm object to capture SQL statements emitted by each
  * migration's up()/down() functions. No live database is required.
@@ -33,6 +33,8 @@ const migration0022 = require('../migrations/0022_pep_checks.js');
 const migration0023 = require('../migrations/0023_sar_reports.js');
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const migration0024 = require('../migrations/0024_rfq_requests.js');
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const migration0025 = require('../migrations/0025_quotes.js');
 
 /** Creates a mock pgm object and returns captured SQL strings after calling fn. */
 function captureSql(fn: (pgm: { sql: (s: string) => void }) => void): string[] {
@@ -1080,6 +1082,90 @@ describe('Migration 0024: rfq_requests', () => {
       const sideIdx = sqls.findIndex((s) => s.includes('rfq_side_enum'));
       expect(tableIdx).toBeLessThan(statusIdx);
       expect(tableIdx).toBeLessThan(sideIdx);
+    });
+  });
+});
+
+// ─── Migration 0025: quotes ───────────────────────────────────────────────────
+
+describe('Migration 0025: quotes', () => {
+  describe('up', () => {
+    let sqls: string[];
+    beforeEach(() => { sqls = captureSql(migration0025.up); });
+
+    it('creates the quote_status_enum type', () => {
+      const all = joined(sqls);
+      expect(all).toContain('CREATE TYPE quote_status_enum AS ENUM');
+      expect(all).toContain('pending');
+      expect(all).toContain('accepted');
+      expect(all).toContain('rejected');
+      expect(all).toContain('expired');
+      expect(all).toContain('withdrawn');
+    });
+
+    it('creates the quotes table', () => {
+      expect(joined(sqls)).toContain('CREATE TABLE quotes');
+    });
+
+    it('includes core quote columns', () => {
+      const all = joined(sqls);
+      expect(all).toContain('rfq_id');
+      expect(all).toContain('quoter_institution_id');
+      expect(all).toContain('quoter_user_id');
+      expect(all).toContain('price_per_unit');
+      expect(all).toContain('quantity');
+      expect(all).toContain('total_amount');
+      expect(all).toContain('status');
+      expect(all).toContain('expires_at');
+    });
+
+    it('includes lifecycle columns', () => {
+      const all = joined(sqls);
+      expect(all).toContain('accepted_at');
+      expect(all).toContain('withdrawn_at');
+    });
+
+    it('references rfq_requests, institutions, and users tables', () => {
+      const all = joined(sqls);
+      expect(all).toContain('REFERENCES rfq_requests(id)');
+      expect(all).toContain('REFERENCES institutions(id)');
+      expect(all).toContain('REFERENCES users(id)');
+    });
+
+    it('creates indexes', () => {
+      const all = joined(sqls);
+      expect(all).toContain('idx_quotes_rfq_id');
+      expect(all).toContain('idx_quotes_quoter_institution');
+      expect(all).toContain('idx_quotes_status');
+      expect(all).toContain('idx_quotes_expires_at');
+      expect(all).toContain('idx_quotes_created_at');
+    });
+
+    it('creates partial index on expires_at for pending quotes', () => {
+      const all = joined(sqls);
+      expect(all).toContain("WHERE status = 'pending'");
+    });
+
+    it('creates enum before table (order matters)', () => {
+      const enumIdx = sqls.findIndex((s) => s.includes('quote_status_enum'));
+      const tableIdx = sqls.findIndex((s) => s.includes('CREATE TABLE quotes'));
+      expect(enumIdx).toBeLessThan(tableIdx);
+    });
+  });
+
+  describe('down', () => {
+    it('drops table and enum type', () => {
+      const sqls = captureSql(migration0025.down);
+      const all = joined(sqls);
+      expect(all).toContain('DROP TABLE IF EXISTS quotes');
+      expect(all).toContain('DROP TYPE IF EXISTS quote_status_enum');
+    });
+
+    it('drops table before type (order matters)', () => {
+      const sqls = captureSql(migration0025.down);
+      const tableIdx = sqls.findIndex((s) => s.includes('DROP TABLE IF EXISTS quotes'));
+      const typeIdx = sqls.findIndex((s) => s.includes('quote_status_enum'));
+      expect(tableIdx).toBeLessThan(typeIdx);
     });
   });
 });
