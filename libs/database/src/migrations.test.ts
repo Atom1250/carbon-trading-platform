@@ -45,6 +45,8 @@ const migration0028 = require('../migrations/0028_ledger_tables.js');
 const migration0029 = require('../migrations/0029_reconciliation_runs.js');
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const migration0030 = require('../migrations/0030_deposits.js');
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const migration0031 = require('../migrations/0031_withdrawals.js');
 
 /** Creates a mock pgm object and returns captured SQL strings after calling fn. */
 function captureSql(fn: (pgm: { sql: (s: string) => void }) => void): string[] {
@@ -1681,6 +1683,133 @@ describe('Migration 0030: deposits', () => {
       const tableIdx = sqls.findIndex((s) => s.includes('DROP TABLE IF EXISTS deposits'));
       const statusIdx = sqls.findIndex((s) => s.includes('deposit_status_enum'));
       const methodIdx = sqls.findIndex((s) => s.includes('deposit_method_enum'));
+      expect(tableIdx).toBeLessThan(statusIdx);
+      expect(tableIdx).toBeLessThan(methodIdx);
+    });
+  });
+});
+
+// ─── Migration 0031: withdrawals ──────────────────────────────────────────────
+
+describe('Migration 0031: withdrawals', () => {
+  describe('up', () => {
+    let sqls: string[];
+    beforeEach(() => { sqls = captureSql(migration0031.up); });
+
+    it('creates the withdrawal_method_enum type', () => {
+      const all = joined(sqls);
+      expect(all).toContain('CREATE TYPE withdrawal_method_enum AS ENUM');
+      expect(all).toContain('wire');
+      expect(all).toContain('ach');
+    });
+
+    it('creates the withdrawal_status_enum type', () => {
+      const all = joined(sqls);
+      expect(all).toContain('CREATE TYPE withdrawal_status_enum AS ENUM');
+      expect(all).toContain('pending_approval');
+      expect(all).toContain('approved');
+      expect(all).toContain('processing');
+      expect(all).toContain('completed');
+      expect(all).toContain('failed');
+      expect(all).toContain('rejected');
+    });
+
+    it('creates the withdrawals table', () => {
+      expect(joined(sqls)).toContain('CREATE TABLE withdrawals');
+    });
+
+    it('includes core withdrawal columns', () => {
+      const all = joined(sqls);
+      expect(all).toContain('institution_id');
+      expect(all).toContain('user_id');
+      expect(all).toContain('method');
+      expect(all).toContain('status');
+      expect(all).toContain('amount');
+      expect(all).toContain('fee_amount');
+      expect(all).toContain('net_amount');
+      expect(all).toContain('currency');
+      expect(all).toContain('external_reference');
+      expect(all).toContain('description');
+    });
+
+    it('includes journal entry references', () => {
+      const all = joined(sqls);
+      expect(all).toContain('journal_entry_id');
+      expect(all).toContain('fee_journal_entry_id');
+    });
+
+    it('includes approval workflow columns', () => {
+      const all = joined(sqls);
+      expect(all).toContain('requires_approval');
+      expect(all).toContain('approved_by');
+      expect(all).toContain('approved_at');
+      expect(all).toContain('rejected_by');
+      expect(all).toContain('rejected_at');
+      expect(all).toContain('rejection_reason');
+    });
+
+    it('includes lifecycle columns', () => {
+      const all = joined(sqls);
+      expect(all).toContain('failure_reason');
+      expect(all).toContain('completed_at');
+      expect(all).toContain('failed_at');
+    });
+
+    it('references institutions, users, and journal_entries tables', () => {
+      const all = joined(sqls);
+      expect(all).toContain('REFERENCES institutions(id)');
+      expect(all).toContain('REFERENCES users(id)');
+      expect(all).toContain('REFERENCES journal_entries(id)');
+    });
+
+    it('includes check constraints for positive amounts', () => {
+      const all = joined(sqls);
+      expect(all).toContain('chk_withdrawal_amount_positive');
+      expect(all).toContain('chk_withdrawal_net_positive');
+    });
+
+    it('creates indexes', () => {
+      const all = joined(sqls);
+      expect(all).toContain('idx_withdrawals_institution_id');
+      expect(all).toContain('idx_withdrawals_user_id');
+      expect(all).toContain('idx_withdrawals_status');
+      expect(all).toContain('idx_withdrawals_method');
+      expect(all).toContain('idx_withdrawals_created_at');
+      expect(all).toContain('idx_withdrawals_completed_at');
+      expect(all).toContain('idx_withdrawals_requires_approval');
+    });
+
+    it('creates partial index on completed_at', () => {
+      expect(joined(sqls)).toContain('WHERE completed_at IS NOT NULL');
+    });
+
+    it('creates partial index on requires_approval for pending status', () => {
+      expect(joined(sqls)).toContain("WHERE status = 'pending_approval'");
+    });
+
+    it('creates enums before table (order matters)', () => {
+      const methodIdx = sqls.findIndex((s) => s.includes('withdrawal_method_enum'));
+      const statusIdx = sqls.findIndex((s) => s.includes('withdrawal_status_enum'));
+      const tableIdx = sqls.findIndex((s) => s.includes('CREATE TABLE withdrawals'));
+      expect(methodIdx).toBeLessThan(tableIdx);
+      expect(statusIdx).toBeLessThan(tableIdx);
+    });
+  });
+
+  describe('down', () => {
+    it('drops table and both enum types', () => {
+      const sqls = captureSql(migration0031.down);
+      const all = joined(sqls);
+      expect(all).toContain('DROP TABLE IF EXISTS withdrawals');
+      expect(all).toContain('DROP TYPE IF EXISTS withdrawal_status_enum');
+      expect(all).toContain('DROP TYPE IF EXISTS withdrawal_method_enum');
+    });
+
+    it('drops table before types (order matters)', () => {
+      const sqls = captureSql(migration0031.down);
+      const tableIdx = sqls.findIndex((s) => s.includes('DROP TABLE IF EXISTS withdrawals'));
+      const statusIdx = sqls.findIndex((s) => s.includes('withdrawal_status_enum'));
+      const methodIdx = sqls.findIndex((s) => s.includes('withdrawal_method_enum'));
       expect(tableIdx).toBeLessThan(statusIdx);
       expect(tableIdx).toBeLessThan(methodIdx);
     });

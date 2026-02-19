@@ -211,3 +211,53 @@ export interface IPaymentProvider {
   confirmPaymentIntent(paymentIntentId: string): Promise<{ status: string }>;
   cancelPaymentIntent(paymentIntentId: string): Promise<{ status: string }>;
 }
+
+// ─── Withdrawals (Session 6.4) ──────────────────────────────────────────────
+
+export type WithdrawalMethod = 'wire' | 'ach';
+export type WithdrawalStatus = 'pending_approval' | 'approved' | 'processing' | 'completed' | 'failed' | 'rejected';
+
+export interface Withdrawal {
+  id: string;
+  institutionId: string;
+  userId: string;
+  method: WithdrawalMethod;
+  status: WithdrawalStatus;
+  amount: string;
+  feeAmount: string;
+  netAmount: string;
+  currency: string;
+  externalReference: string | null;
+  description: string | null;
+  journalEntryId: string | null;
+  feeJournalEntryId: string | null;
+  requiresApproval: boolean;
+  approvedBy: string | null;
+  approvedAt: Date | null;
+  rejectedBy: string | null;
+  rejectedAt: Date | null;
+  rejectionReason: string | null;
+  failureReason: string | null;
+  completedAt: Date | null;
+  failedAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface CreateWithdrawalDTO {
+  institutionId: string;
+  userId: string;
+  method: WithdrawalMethod;
+  amount: number;
+  currency?: string;
+  description?: string;
+}
+
+export interface WithdrawalListQuery {
+  institutionId?: string;
+  userId?: string;
+  status?: WithdrawalStatus;
+  method?: WithdrawalMethod;
+  limit: number;
+  offset: number;
+}
