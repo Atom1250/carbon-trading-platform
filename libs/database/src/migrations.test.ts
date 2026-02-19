@@ -47,6 +47,8 @@ const migration0029 = require('../migrations/0029_reconciliation_runs.js');
 const migration0030 = require('../migrations/0030_deposits.js');
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const migration0031 = require('../migrations/0031_withdrawals.js');
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const migration0032 = require('../migrations/0032_bank_reconciliation.js');
 
 /** Creates a mock pgm object and returns captured SQL strings after calling fn. */
 function captureSql(fn: (pgm: { sql: (s: string) => void }) => void): string[] {
@@ -1812,6 +1814,151 @@ describe('Migration 0031: withdrawals', () => {
       const methodIdx = sqls.findIndex((s) => s.includes('withdrawal_method_enum'));
       expect(tableIdx).toBeLessThan(statusIdx);
       expect(tableIdx).toBeLessThan(methodIdx);
+    });
+  });
+});
+
+// ─── Migration 0032: bank_reconciliation ──────────────────────────────────────
+
+describe('Migration 0032: bank_reconciliation', () => {
+  describe('up', () => {
+    let sqls: string[];
+    beforeEach(() => { sqls = captureSql(migration0032.up); });
+
+    it('creates the bank_recon_status_enum type', () => {
+      const all = joined(sqls);
+      expect(all).toContain('CREATE TYPE bank_recon_status_enum AS ENUM');
+      expect(all).toContain('pending');
+      expect(all).toContain('in_progress');
+      expect(all).toContain('completed');
+      expect(all).toContain('failed');
+    });
+
+    it('creates the bank_entry_match_status_enum type', () => {
+      const all = joined(sqls);
+      expect(all).toContain('CREATE TYPE bank_entry_match_status_enum AS ENUM');
+      expect(all).toContain('unmatched');
+      expect(all).toContain('matched');
+      expect(all).toContain('disputed');
+      expect(all).toContain('resolved');
+    });
+
+    it('creates the bank_statements table', () => {
+      expect(joined(sqls)).toContain('CREATE TABLE bank_statements');
+    });
+
+    it('creates the bank_statement_entries table', () => {
+      expect(joined(sqls)).toContain('CREATE TABLE bank_statement_entries');
+    });
+
+    it('creates the bank_reconciliation_runs table', () => {
+      expect(joined(sqls)).toContain('CREATE TABLE bank_reconciliation_runs');
+    });
+
+    it('includes core bank_statements columns', () => {
+      const all = joined(sqls);
+      expect(all).toContain('institution_id');
+      expect(all).toContain('bank_name');
+      expect(all).toContain('account_number');
+      expect(all).toContain('statement_date');
+      expect(all).toContain('opening_balance');
+      expect(all).toContain('closing_balance');
+      expect(all).toContain('entry_count');
+      expect(all).toContain('imported_by');
+      expect(all).toContain('file_name');
+    });
+
+    it('includes core bank_statement_entries columns', () => {
+      const all = joined(sqls);
+      expect(all).toContain('transaction_date');
+      expect(all).toContain('description');
+      expect(all).toContain('reference');
+      expect(all).toContain('debit_amount');
+      expect(all).toContain('credit_amount');
+      expect(all).toContain('match_status');
+      expect(all).toContain('matched_deposit_id');
+      expect(all).toContain('matched_withdrawal_id');
+      expect(all).toContain('match_confidence');
+      expect(all).toContain('dispute_reason');
+    });
+
+    it('includes core bank_reconciliation_runs columns', () => {
+      const all = joined(sqls);
+      expect(all).toContain('total_entries');
+      expect(all).toContain('matched_count');
+      expect(all).toContain('unmatched_count');
+      expect(all).toContain('disputed_count');
+      expect(all).toContain('match_rate');
+      expect(all).toContain('total_variance');
+      expect(all).toContain('run_by');
+    });
+
+    it('references institutions, users, deposits, and withdrawals tables', () => {
+      const all = joined(sqls);
+      expect(all).toContain('REFERENCES institutions(id)');
+      expect(all).toContain('REFERENCES users(id)');
+      expect(all).toContain('REFERENCES deposits(id)');
+      expect(all).toContain('REFERENCES withdrawals(id)');
+      expect(all).toContain('REFERENCES bank_statements(id)');
+    });
+
+    it('includes check constraints', () => {
+      const all = joined(sqls);
+      expect(all).toContain('chk_entry_amounts');
+      expect(all).toContain('chk_entry_one_direction');
+    });
+
+    it('creates indexes', () => {
+      const all = joined(sqls);
+      expect(all).toContain('idx_bank_statements_institution_id');
+      expect(all).toContain('idx_bank_statements_statement_date');
+      expect(all).toContain('idx_bank_statements_created_at');
+      expect(all).toContain('idx_bank_statement_entries_statement_id');
+      expect(all).toContain('idx_bank_statement_entries_match_status');
+      expect(all).toContain('idx_bank_statement_entries_transaction_date');
+      expect(all).toContain('idx_bank_statement_entries_unmatched');
+      expect(all).toContain('idx_bank_reconciliation_runs_institution_id');
+      expect(all).toContain('idx_bank_reconciliation_runs_statement_id');
+      expect(all).toContain('idx_bank_reconciliation_runs_status');
+      expect(all).toContain('idx_bank_reconciliation_runs_created_at');
+    });
+
+    it('creates partial index on unmatched entries', () => {
+      expect(joined(sqls)).toContain("WHERE match_status = 'unmatched'");
+    });
+
+    it('creates enums before tables (order matters)', () => {
+      const reconStatusIdx = sqls.findIndex((s) => s.includes('bank_recon_status_enum'));
+      const matchStatusIdx = sqls.findIndex((s) => s.includes('bank_entry_match_status_enum'));
+      const statementsIdx = sqls.findIndex((s) => s.includes('CREATE TABLE bank_statements'));
+      const entriesIdx = sqls.findIndex((s) => s.includes('CREATE TABLE bank_statement_entries'));
+      expect(reconStatusIdx).toBeLessThan(statementsIdx);
+      expect(matchStatusIdx).toBeLessThan(entriesIdx);
+    });
+  });
+
+  describe('down', () => {
+    it('drops all tables and both enum types', () => {
+      const sqls = captureSql(migration0032.down);
+      const all = joined(sqls);
+      expect(all).toContain('DROP TABLE IF EXISTS bank_reconciliation_runs');
+      expect(all).toContain('DROP TABLE IF EXISTS bank_statement_entries');
+      expect(all).toContain('DROP TABLE IF EXISTS bank_statements');
+      expect(all).toContain('DROP TYPE IF EXISTS bank_entry_match_status_enum');
+      expect(all).toContain('DROP TYPE IF EXISTS bank_recon_status_enum');
+    });
+
+    it('drops tables before types (order matters)', () => {
+      const sqls = captureSql(migration0032.down);
+      const runsIdx = sqls.findIndex((s) => s.includes('DROP TABLE IF EXISTS bank_reconciliation_runs'));
+      const entriesIdx = sqls.findIndex((s) => s.includes('DROP TABLE IF EXISTS bank_statement_entries'));
+      const statementsIdx = sqls.findIndex((s) => s.includes('DROP TABLE IF EXISTS bank_statements'));
+      const matchEnumIdx = sqls.findIndex((s) => s.includes('bank_entry_match_status_enum'));
+      const reconEnumIdx = sqls.findIndex((s) => s.includes('bank_recon_status_enum'));
+      expect(runsIdx).toBeLessThan(entriesIdx);
+      expect(entriesIdx).toBeLessThan(statementsIdx);
+      expect(statementsIdx).toBeLessThan(matchEnumIdx);
+      expect(statementsIdx).toBeLessThan(reconEnumIdx);
     });
   });
 });

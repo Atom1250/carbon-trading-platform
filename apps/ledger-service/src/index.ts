@@ -5,3 +5,5 @@ export { BalanceService } from './services/BalanceService.js';
 export { ReconciliationService } from './services/ReconciliationService.js';
 export { DepositService } from './services/DepositService.js';
 export { WithdrawalService } from './services/WithdrawalService.js';
+export { BankReconciliationService } from './services/BankReconciliationService.js';
+export { BankStatementParser } from './services/BankStatementParser.js';

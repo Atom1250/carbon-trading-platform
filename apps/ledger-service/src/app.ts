@@ -11,11 +11,13 @@ import { createBalanceRouter } from './routes/balance.routes.js';
 import { createReconciliationRouter } from './routes/reconciliation.routes.js';
 import { createDepositRouter } from './routes/deposit.routes.js';
 import { createWithdrawalRouter } from './routes/withdrawal.routes.js';
+import { createBankReconciliationRouter } from './routes/bank-reconciliation.routes.js';
 import type { LedgerService } from './services/LedgerService.js';
 import type { BalanceService } from './services/BalanceService.js';
 import type { ReconciliationService } from './services/ReconciliationService.js';
 import type { DepositService } from './services/DepositService.js';
 import type { WithdrawalService } from './services/WithdrawalService.js';
+import type { BankReconciliationService } from './services/BankReconciliationService.js';
 
 export interface LedgerAppDependencies {
   ledgerService: LedgerService;
@@ -23,6 +25,7 @@ export interface LedgerAppDependencies {
   reconciliationService?: ReconciliationService;
   depositService?: DepositService;
   withdrawalService?: WithdrawalService;
+  bankReconciliationService?: BankReconciliationService;
   corsOrigins?: string;
 }
 
@@ -82,6 +85,12 @@ export function createApp(deps: LedgerAppDependencies): Express {
   if (deps.withdrawalService) {
     app.use('/withdrawals', createWithdrawalRouter({
       withdrawalService: deps.withdrawalService,
+    }));
+  }
+
+  if (deps.bankReconciliationService) {
+    app.use('/bank-reconciliation', createBankReconciliationRouter({
+      bankReconciliationService: deps.bankReconciliationService,
     }));
   }
 

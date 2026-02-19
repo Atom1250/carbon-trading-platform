@@ -261,3 +261,101 @@ export interface WithdrawalListQuery {
   limit: number;
   offset: number;
 }
+
+// ─── Bank Reconciliation (Session 6.5) ──────────────────────────────────────
+
+export type BankReconStatus = 'pending' | 'in_progress' | 'completed' | 'failed';
+export type BankEntryMatchStatus = 'unmatched' | 'matched' | 'disputed' | 'resolved';
+
+export interface BankStatement {
+  id: string;
+  institutionId: string;
+  bankName: string;
+  accountNumber: string;
+  statementDate: Date;
+  openingBalance: string;
+  closingBalance: string;
+  entryCount: number;
+  importedBy: string;
+  fileName: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface BankStatementEntry {
+  id: string;
+  statementId: string;
+  transactionDate: Date;
+  description: string;
+  reference: string | null;
+  debitAmount: string;
+  creditAmount: string;
+  balance: string | null;
+  matchStatus: BankEntryMatchStatus;
+  matchedDepositId: string | null;
+  matchedWithdrawalId: string | null;
+  matchConfidence: string | null;
+  disputeReason: string | null;
+  resolvedAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface BankReconciliationRun {
+  id: string;
+  institutionId: string;
+  statementId: string;
+  status: BankReconStatus;
+  totalEntries: number;
+  matchedCount: number;
+  unmatchedCount: number;
+  disputedCount: number;
+  matchRate: string | null;
+  totalVariance: string;
+  startedAt: Date | null;
+  completedAt: Date | null;
+  runBy: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface ImportBankStatementDTO {
+  institutionId: string;
+  bankName: string;
+  accountNumber: string;
+  statementDate: string;
+  openingBalance: number;
+  closingBalance: number;
+  importedBy: string;
+  fileName?: string;
+}
+
+export interface ParsedBankEntry {
+  transactionDate: string;
+  description: string;
+  reference?: string;
+  debitAmount: number;
+  creditAmount: number;
+  balance?: number;
+}
+
+export interface BankReconciliationListQuery {
+  institutionId?: string;
+  status?: BankReconStatus;
+  limit: number;
+  offset: number;
+}
+
+export interface BankReconciliationReport {
+  run: BankReconciliationRun;
+  statement: BankStatement;
+  entries: BankStatementEntry[];
+  summary: {
+    totalCredits: number;
+    totalDebits: number;
+    matchedCredits: number;
+    matchedDebits: number;
+    unmatchedCredits: number;
+    unmatchedDebits: number;
+  };
+}
