@@ -1,5 +1,5 @@
 /**
- * Migration tests for 0011–0027.
+ * Migration tests for 0011–0029.
  *
  * These tests use a mock pgm object to capture SQL statements emitted by each
  * migration's up()/down() functions. No live database is required.
@@ -39,6 +39,10 @@ const migration0025 = require('../migrations/0025_quotes.js');
 const migration0026 = require('../migrations/0026_trades.js');
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const migration0027 = require('../migrations/0027_order_book.js');
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const migration0028 = require('../migrations/0028_ledger_tables.js');
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const migration0029 = require('../migrations/0029_reconciliation_runs.js');
 
 /** Creates a mock pgm object and returns captured SQL strings after calling fn. */
 function captureSql(fn: (pgm: { sql: (s: string) => void }) => void): string[] {
@@ -1359,6 +1363,215 @@ describe('Migration 0027: order_book_entries', () => {
       const sideIdx = sqls.findIndex((s) => s.includes('order_side_enum'));
       expect(tableIdx).toBeLessThan(statusIdx);
       expect(tableIdx).toBeLessThan(sideIdx);
+    });
+  });
+});
+
+// ─── Migration 0028: ledger_tables ────────────────────────────────────────────
+
+describe('Migration 0028: ledger_tables', () => {
+  describe('up', () => {
+    let sqls: string[];
+    beforeEach(() => { sqls = captureSql(migration0028.up); });
+
+    it('creates the account_category_enum type', () => {
+      const all = joined(sqls);
+      expect(all).toContain('CREATE TYPE account_category_enum AS ENUM');
+      expect(all).toContain('asset');
+      expect(all).toContain('liability');
+      expect(all).toContain('revenue');
+      expect(all).toContain('expense');
+    });
+
+    it('creates the journal_entry_status_enum type', () => {
+      const all = joined(sqls);
+      expect(all).toContain('CREATE TYPE journal_entry_status_enum AS ENUM');
+      expect(all).toContain('pending');
+      expect(all).toContain('posted');
+      expect(all).toContain('reversed');
+    });
+
+    it('creates the gl_accounts table', () => {
+      expect(joined(sqls)).toContain('CREATE TABLE gl_accounts');
+    });
+
+    it('creates the journal_entries table', () => {
+      expect(joined(sqls)).toContain('CREATE TABLE journal_entries');
+    });
+
+    it('creates the journal_entry_lines table', () => {
+      expect(joined(sqls)).toContain('CREATE TABLE journal_entry_lines');
+    });
+
+    it('includes core gl_accounts columns', () => {
+      const all = joined(sqls);
+      expect(all).toContain('code');
+      expect(all).toContain('name');
+      expect(all).toContain('category');
+      expect(all).toContain('is_active');
+      expect(all).toContain('parent_account_id');
+    });
+
+    it('includes core journal_entries columns', () => {
+      const all = joined(sqls);
+      expect(all).toContain('reference_type');
+      expect(all).toContain('reference_id');
+      expect(all).toContain('status');
+      expect(all).toContain('posted_at');
+      expect(all).toContain('reversed_at');
+      expect(all).toContain('reversal_of_id');
+      expect(all).toContain('created_by');
+    });
+
+    it('includes core journal_entry_lines columns', () => {
+      const all = joined(sqls);
+      expect(all).toContain('journal_entry_id');
+      expect(all).toContain('account_id');
+      expect(all).toContain('debit_amount');
+      expect(all).toContain('credit_amount');
+    });
+
+    it('references users table from journal_entries', () => {
+      const all = joined(sqls);
+      expect(all).toContain('REFERENCES users(id)');
+    });
+
+    it('references gl_accounts from journal_entry_lines', () => {
+      const all = joined(sqls);
+      expect(all).toContain('REFERENCES gl_accounts(id)');
+    });
+
+    it('references journal_entries from journal_entry_lines', () => {
+      const all = joined(sqls);
+      expect(all).toContain('REFERENCES journal_entries(id)');
+    });
+
+    it('includes check constraint for debit/credit exclusivity', () => {
+      const all = joined(sqls);
+      expect(all).toContain('chk_debit_or_credit');
+    });
+
+    it('creates indexes', () => {
+      const all = joined(sqls);
+      expect(all).toContain('idx_gl_accounts_category');
+      expect(all).toContain('idx_gl_accounts_code');
+      expect(all).toContain('idx_journal_entries_reference');
+      expect(all).toContain('idx_journal_entries_status');
+      expect(all).toContain('idx_journal_entry_lines_entry');
+      expect(all).toContain('idx_journal_entry_lines_account');
+    });
+
+    it('seeds default chart of accounts', () => {
+      const all = joined(sqls);
+      expect(all).toContain("'1000'");
+      expect(all).toContain("'Cash'");
+      expect(all).toContain("'3000'");
+      expect(all).toContain("'Trading Revenue'");
+      expect(all).toContain("'4000'");
+      expect(all).toContain("'Operating Expenses'");
+    });
+
+    it('creates enums before tables (order matters)', () => {
+      const categoryEnumIdx = sqls.findIndex((s) => s.includes('account_category_enum'));
+      const statusEnumIdx = sqls.findIndex((s) => s.includes('journal_entry_status_enum'));
+      const glTableIdx = sqls.findIndex((s) => s.includes('CREATE TABLE gl_accounts'));
+      const jeTableIdx = sqls.findIndex((s) => s.includes('CREATE TABLE journal_entries'));
+      expect(categoryEnumIdx).toBeLessThan(glTableIdx);
+      expect(statusEnumIdx).toBeLessThan(jeTableIdx);
+    });
+  });
+
+  describe('down', () => {
+    it('drops all tables and enum types', () => {
+      const sqls = captureSql(migration0028.down);
+      const all = joined(sqls);
+      expect(all).toContain('DROP TABLE IF EXISTS journal_entry_lines');
+      expect(all).toContain('DROP TABLE IF EXISTS journal_entries');
+      expect(all).toContain('DROP TABLE IF EXISTS gl_accounts');
+      expect(all).toContain('DROP TYPE IF EXISTS journal_entry_status_enum');
+      expect(all).toContain('DROP TYPE IF EXISTS account_category_enum');
+    });
+
+    it('drops tables before types (order matters)', () => {
+      const sqls = captureSql(migration0028.down);
+      const linesIdx = sqls.findIndex((s) => s.includes('DROP TABLE IF EXISTS journal_entry_lines'));
+      const entriesIdx = sqls.findIndex((s) => s.includes('DROP TABLE IF EXISTS journal_entries'));
+      const glIdx = sqls.findIndex((s) => s.includes('DROP TABLE IF EXISTS gl_accounts'));
+      const statusIdx = sqls.findIndex((s) => s.includes('journal_entry_status_enum'));
+      const categoryIdx = sqls.findIndex((s) => s.includes('account_category_enum'));
+      expect(linesIdx).toBeLessThan(entriesIdx);
+      expect(entriesIdx).toBeLessThan(glIdx);
+      expect(glIdx).toBeLessThan(statusIdx);
+      expect(glIdx).toBeLessThan(categoryIdx);
+    });
+  });
+});
+
+// ─── Migration 0029: reconciliation_runs ──────────────────────────────────────
+
+describe('Migration 0029: reconciliation_runs', () => {
+  describe('up', () => {
+    let sqls: string[];
+    beforeEach(() => { sqls = captureSql(migration0029.up); });
+
+    it('creates the reconciliation_status_enum type', () => {
+      const all = joined(sqls);
+      expect(all).toContain('CREATE TYPE reconciliation_status_enum AS ENUM');
+      expect(all).toContain('passed');
+      expect(all).toContain('failed');
+      expect(all).toContain('warning');
+    });
+
+    it('creates the reconciliation_runs table', () => {
+      expect(joined(sqls)).toContain('CREATE TABLE reconciliation_runs');
+    });
+
+    it('includes core reconciliation columns', () => {
+      const all = joined(sqls);
+      expect(all).toContain('run_type');
+      expect(all).toContain('status');
+      expect(all).toContain('total_accounts');
+      expect(all).toContain('total_debits');
+      expect(all).toContain('total_credits');
+      expect(all).toContain('variance_count');
+      expect(all).toContain('variances');
+      expect(all).toContain('tolerance');
+      expect(all).toContain('started_at');
+      expect(all).toContain('completed_at');
+    });
+
+    it('uses JSONB for variances', () => {
+      const all = joined(sqls);
+      expect(all).toContain('JSONB');
+    });
+
+    it('creates indexes', () => {
+      const all = joined(sqls);
+      expect(all).toContain('idx_reconciliation_runs_status');
+      expect(all).toContain('idx_reconciliation_runs_run_type');
+      expect(all).toContain('idx_reconciliation_runs_created_at');
+    });
+
+    it('creates enum before table (order matters)', () => {
+      const enumIdx = sqls.findIndex((s) => s.includes('reconciliation_status_enum'));
+      const tableIdx = sqls.findIndex((s) => s.includes('CREATE TABLE reconciliation_runs'));
+      expect(enumIdx).toBeLessThan(tableIdx);
+    });
+  });
+
+  describe('down', () => {
+    it('drops table and enum type', () => {
+      const sqls = captureSql(migration0029.down);
+      const all = joined(sqls);
+      expect(all).toContain('DROP TABLE IF EXISTS reconciliation_runs');
+      expect(all).toContain('DROP TYPE IF EXISTS reconciliation_status_enum');
+    });
+
+    it('drops table before type (order matters)', () => {
+      const sqls = captureSql(migration0029.down);
+      const tableIdx = sqls.findIndex((s) => s.includes('DROP TABLE IF EXISTS reconciliation_runs'));
+      const enumIdx = sqls.findIndex((s) => s.includes('reconciliation_status_enum'));
+      expect(tableIdx).toBeLessThan(enumIdx);
     });
   });
 });

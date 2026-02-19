@@ -13,6 +13,7 @@ module.exports = {
         'institution',
         'asset',
         'compliance',
+        'ledger',
         'blockchain',
         'frontend',
         'config',

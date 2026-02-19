@@ -31,5 +31,10 @@ export function getServiceRegistry(): Record<string, ServiceConfig> {
       healthPath: '/health',
       timeout: 30_000,
     },
+    ledger: {
+      url: process.env['LEDGER_SERVICE_URL'] ?? 'http://localhost:3007',
+      healthPath: '/health',
+      timeout: 30_000,
+    },
   };
 }

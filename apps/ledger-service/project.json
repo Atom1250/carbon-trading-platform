@@ -1,0 +1,15 @@
+{
+  "name": "@carbon-trading-platform/ledger-service",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/ledger-service/src",
+  "projectType": "application",
+  "targets": {
+    "test": {
+      "executor": "@nx/jest:jest",
+      "options": {
+        "jestConfig": "apps/ledger-service/jest.config.cjs",
+        "passWithNoTests": false
+      }
+    }
+  }
+}
