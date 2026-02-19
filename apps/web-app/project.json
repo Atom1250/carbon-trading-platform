@@ -1,0 +1,15 @@
+{
+  "name": "@carbon-trading-platform/web-app",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/web-app/src",
+  "projectType": "application",
+  "targets": {
+    "test": {
+      "executor": "@nx/jest:jest",
+      "options": {
+        "jestConfig": "apps/web-app/jest.config.cjs",
+        "passWithNoTests": false
+      }
+    }
+  }
+}
