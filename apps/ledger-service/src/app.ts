@@ -9,14 +9,17 @@ import { errorHandler } from './middleware/errorHandler.js';
 import { createAccountRouter, createEntryRouter, createTrialBalanceRouter } from './routes/ledger.routes.js';
 import { createBalanceRouter } from './routes/balance.routes.js';
 import { createReconciliationRouter } from './routes/reconciliation.routes.js';
+import { createDepositRouter } from './routes/deposit.routes.js';
 import type { LedgerService } from './services/LedgerService.js';
 import type { BalanceService } from './services/BalanceService.js';
 import type { ReconciliationService } from './services/ReconciliationService.js';
+import type { DepositService } from './services/DepositService.js';
 
 export interface LedgerAppDependencies {
   ledgerService: LedgerService;
   balanceService?: BalanceService;
   reconciliationService?: ReconciliationService;
+  depositService?: DepositService;
   corsOrigins?: string;
 }
 
@@ -64,6 +67,12 @@ export function createApp(deps: LedgerAppDependencies): Express {
   if (deps.reconciliationService) {
     app.use('/reconciliation', createReconciliationRouter({
       reconciliationService: deps.reconciliationService,
+    }));
+  }
+
+  if (deps.depositService) {
+    app.use('/deposits', createDepositRouter({
+      depositService: deps.depositService,
     }));
   }
 

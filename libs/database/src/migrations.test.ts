@@ -43,6 +43,8 @@ const migration0027 = require('../migrations/0027_order_book.js');
 const migration0028 = require('../migrations/0028_ledger_tables.js');
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const migration0029 = require('../migrations/0029_reconciliation_runs.js');
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const migration0030 = require('../migrations/0030_deposits.js');
 
 /** Creates a mock pgm object and returns captured SQL strings after calling fn. */
 function captureSql(fn: (pgm: { sql: (s: string) => void }) => void): string[] {
@@ -1572,6 +1574,115 @@ describe('Migration 0029: reconciliation_runs', () => {
       const tableIdx = sqls.findIndex((s) => s.includes('DROP TABLE IF EXISTS reconciliation_runs'));
       const enumIdx = sqls.findIndex((s) => s.includes('reconciliation_status_enum'));
       expect(tableIdx).toBeLessThan(enumIdx);
+    });
+  });
+});
+
+// ─── Migration 0030: deposits ─────────────────────────────────────────────────
+
+describe('Migration 0030: deposits', () => {
+  describe('up', () => {
+    let sqls: string[];
+    beforeEach(() => { sqls = captureSql(migration0030.up); });
+
+    it('creates the deposit_method_enum type', () => {
+      const all = joined(sqls);
+      expect(all).toContain('CREATE TYPE deposit_method_enum AS ENUM');
+      expect(all).toContain('card');
+      expect(all).toContain('wire');
+      expect(all).toContain('ach');
+    });
+
+    it('creates the deposit_status_enum type', () => {
+      const all = joined(sqls);
+      expect(all).toContain('CREATE TYPE deposit_status_enum AS ENUM');
+      expect(all).toContain('pending');
+      expect(all).toContain('processing');
+      expect(all).toContain('completed');
+      expect(all).toContain('failed');
+      expect(all).toContain('cancelled');
+    });
+
+    it('creates the deposits table', () => {
+      expect(joined(sqls)).toContain('CREATE TABLE deposits');
+    });
+
+    it('includes core deposit columns', () => {
+      const all = joined(sqls);
+      expect(all).toContain('institution_id');
+      expect(all).toContain('user_id');
+      expect(all).toContain('method');
+      expect(all).toContain('status');
+      expect(all).toContain('amount');
+      expect(all).toContain('currency');
+      expect(all).toContain('external_reference');
+      expect(all).toContain('stripe_payment_intent');
+      expect(all).toContain('description');
+      expect(all).toContain('journal_entry_id');
+      expect(all).toContain('failure_reason');
+    });
+
+    it('includes lifecycle columns', () => {
+      const all = joined(sqls);
+      expect(all).toContain('completed_at');
+      expect(all).toContain('failed_at');
+    });
+
+    it('references institutions, users, and journal_entries tables', () => {
+      const all = joined(sqls);
+      expect(all).toContain('REFERENCES institutions(id)');
+      expect(all).toContain('REFERENCES users(id)');
+      expect(all).toContain('REFERENCES journal_entries(id)');
+    });
+
+    it('includes check constraint for positive amount', () => {
+      expect(joined(sqls)).toContain('chk_deposit_amount_positive');
+    });
+
+    it('creates indexes', () => {
+      const all = joined(sqls);
+      expect(all).toContain('idx_deposits_institution_id');
+      expect(all).toContain('idx_deposits_user_id');
+      expect(all).toContain('idx_deposits_status');
+      expect(all).toContain('idx_deposits_method');
+      expect(all).toContain('idx_deposits_created_at');
+      expect(all).toContain('idx_deposits_completed_at');
+      expect(all).toContain('idx_deposits_external_reference');
+    });
+
+    it('creates partial index on completed_at', () => {
+      expect(joined(sqls)).toContain('WHERE completed_at IS NOT NULL');
+    });
+
+    it('creates partial index on external_reference', () => {
+      expect(joined(sqls)).toContain('WHERE external_reference IS NOT NULL');
+    });
+
+    it('creates enums before table (order matters)', () => {
+      const methodIdx = sqls.findIndex((s) => s.includes('deposit_method_enum'));
+      const statusIdx = sqls.findIndex((s) => s.includes('deposit_status_enum'));
+      const tableIdx = sqls.findIndex((s) => s.includes('CREATE TABLE deposits'));
+      expect(methodIdx).toBeLessThan(tableIdx);
+      expect(statusIdx).toBeLessThan(tableIdx);
+    });
+  });
+
+  describe('down', () => {
+    it('drops table and both enum types', () => {
+      const sqls = captureSql(migration0030.down);
+      const all = joined(sqls);
+      expect(all).toContain('DROP TABLE IF EXISTS deposits');
+      expect(all).toContain('DROP TYPE IF EXISTS deposit_status_enum');
+      expect(all).toContain('DROP TYPE IF EXISTS deposit_method_enum');
+    });
+
+    it('drops table before types (order matters)', () => {
+      const sqls = captureSql(migration0030.down);
+      const tableIdx = sqls.findIndex((s) => s.includes('DROP TABLE IF EXISTS deposits'));
+      const statusIdx = sqls.findIndex((s) => s.includes('deposit_status_enum'));
+      const methodIdx = sqls.findIndex((s) => s.includes('deposit_method_enum'));
+      expect(tableIdx).toBeLessThan(statusIdx);
+      expect(tableIdx).toBeLessThan(methodIdx);
     });
   });
 });

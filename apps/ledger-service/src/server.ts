@@ -6,6 +6,7 @@ import { createApp } from './app.js';
 import { LedgerService } from './services/LedgerService.js';
 import { BalanceService } from './services/BalanceService.js';
 import { ReconciliationService } from './services/ReconciliationService.js';
+import { DepositService } from './services/DepositService.js';
 import type { ICacheClient } from './types/ledger.types.js';
 
 const logger = createLogger('ledger-service');
@@ -36,11 +37,13 @@ const cacheClient: ICacheClient = {
 const ledgerService = new LedgerService(db);
 const balanceService = new BalanceService(db, cacheClient);
 const reconciliationService = new ReconciliationService(db);
+const depositService = new DepositService(db, ledgerService);
 
 const app = createApp({
   ledgerService,
   balanceService,
   reconciliationService,
+  depositService,
   corsOrigins: config.CORS_ORIGINS,
 });
 const port = config.PORT ?? 3007;

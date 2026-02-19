@@ -163,3 +163,51 @@ export interface ReconciliationListQuery {
   limit: number;
   offset: number;
 }
+
+// ─── Deposits (Session 6.3) ─────────────────────────────────────────────────
+
+export type DepositMethod = 'card' | 'wire' | 'ach';
+export type DepositStatus = 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled';
+
+export interface Deposit {
+  id: string;
+  institutionId: string;
+  userId: string;
+  method: DepositMethod;
+  status: DepositStatus;
+  amount: string;
+  currency: string;
+  externalReference: string | null;
+  stripePaymentIntent: string | null;
+  description: string | null;
+  journalEntryId: string | null;
+  failureReason: string | null;
+  completedAt: Date | null;
+  failedAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface CreateDepositDTO {
+  institutionId: string;
+  userId: string;
+  method: DepositMethod;
+  amount: number;
+  currency?: string;
+  description?: string;
+}
+
+export interface DepositListQuery {
+  institutionId?: string;
+  userId?: string;
+  status?: DepositStatus;
+  method?: DepositMethod;
+  limit: number;
+  offset: number;
+}
+
+export interface IPaymentProvider {
+  createPaymentIntent(amount: number, currency: string, metadata: Record<string, string>): Promise<{ id: string; clientSecret: string; status: string }>;
+  confirmPaymentIntent(paymentIntentId: string): Promise<{ status: string }>;
+  cancelPaymentIntent(paymentIntentId: string): Promise<{ status: string }>;
+}
