@@ -18,6 +18,52 @@ export interface LoginResponse { user: User; tokens: AuthTokens; mfaRequired?: b
 export interface RegisterRequest { email: string; password: string; firstName: string; lastName: string; }
 export interface MFAVerifyRequest { mfaToken: string; code: string; }
 
+export interface Institution {
+  id: string;
+  name: string;
+  type: string;
+  status: string;
+  country: string;
+  createdAt: string;
+}
+
+export interface Asset {
+  id: string;
+  name: string;
+  type: string;
+  status: string;
+  totalSupply: string;
+  availableSupply: string;
+  createdAt: string;
+}
+
+export interface CreateAssetRequest {
+  name: string;
+  type: string;
+  description: string;
+  totalSupply: number;
+}
+
+export interface RFQ {
+  id: string;
+  assetId: string;
+  requesterInstitutionId: string;
+  requesterUserId: string;
+  side: 'buy' | 'sell';
+  quantity: string;
+  status: string;
+  expiresAt: string;
+  createdAt: string;
+}
+
+export interface CreateRFQRequest {
+  assetId: string;
+  requesterInstitutionId: string;
+  requesterUserId: string;
+  side: 'buy' | 'sell';
+  quantity: number;
+}
+
 class ApiClient {
   private getAccessToken(): string | null {
     if (typeof window === 'undefined') return null;
@@ -70,6 +116,40 @@ class ApiClient {
 
   async getMe(): Promise<{ data: User }> {
     return this.request<{ data: User }>('/api/v1/auth/me');
+  }
+
+  async getInstitutions(): Promise<{ data: Institution[]; total: number }> {
+    return this.request<{ data: Institution[]; total: number }>('/api/v1/institutions');
+  }
+
+  async getInstitution(id: string): Promise<{ data: Institution }> {
+    return this.request<{ data: Institution }>(`/api/v1/institutions/${id}`);
+  }
+
+  async getAssets(): Promise<{ data: Asset[]; total: number }> {
+    return this.request<{ data: Asset[]; total: number }>('/api/v1/assets');
+  }
+
+  async getAsset(id: string): Promise<{ data: Asset }> {
+    return this.request<{ data: Asset }>(`/api/v1/assets/${id}`);
+  }
+
+  async createAsset(data: CreateAssetRequest): Promise<{ data: Asset }> {
+    return this.request<{ data: Asset }>('/api/v1/assets', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getRFQs(): Promise<{ rfqs: RFQ[]; total: number }> {
+    return this.request<{ rfqs: RFQ[]; total: number }>('/api/v1/trading/rfq');
+  }
+
+  async createRFQ(data: CreateRFQRequest): Promise<RFQ> {
+    return this.request<RFQ>('/api/v1/trading/rfq', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
   }
 }
 
