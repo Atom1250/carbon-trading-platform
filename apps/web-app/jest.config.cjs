@@ -26,7 +26,7 @@ module.exports = {
     '^next/headers$': '<rootDir>/__mocks__/next-headers.js',
   },
   setupFilesAfterEnv: [],
-  setupFiles: [],
+  setupFiles: ['<rootDir>/jest.setup.js'],
   globals: {},
   testMatch: ['**/*.test.{ts,tsx}'],
 };
