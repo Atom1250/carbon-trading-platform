@@ -7,10 +7,14 @@ import { requestIdMiddleware } from './middleware/requestId.js';
 import { loggingMiddleware } from './middleware/logging.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { createInstitutionRouter } from './routes/institution.routes.js';
+import { createProjectRouter } from './routes/project.routes.js';
+import { createFundingRequestRouter } from './routes/funding-request.routes.js';
 import type { InstitutionService } from './services/InstitutionService.js';
+import type { ProjectService } from './services/ProjectService.js';
 
 export interface InstitutionAppDependencies {
   institutionService: InstitutionService;
+  projectService?: ProjectService;
   corsOrigins?: string;
 }
 
@@ -38,6 +42,10 @@ export function createApp(deps: InstitutionAppDependencies): Express {
   app.use(loggingMiddleware);
 
   app.use('/institutions', createInstitutionRouter(deps.institutionService));
+  if (deps.projectService) {
+    app.use('/projects', createProjectRouter(deps.projectService));
+    app.use('/funding-requests', createFundingRequestRouter(deps.projectService));
+  }
 
   app.get('/health', (_req, res) => {
     res.status(200).json({ status: 'healthy', service: 'institution-service' });

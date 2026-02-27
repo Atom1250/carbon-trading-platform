@@ -97,6 +97,27 @@ describe('createProxyMiddleware', () => {
     );
   });
 
+  it('should forward Authorization header', async () => {
+    mockedAxios.mockResolvedValue({
+      status: 200,
+      data: {},
+      headers: {},
+    });
+
+    const app = buildTestApp('auth', AUTH_CONFIG);
+    await request(app)
+      .get('/api/v1/auth/profile')
+      .set('Authorization', 'Bearer token-123');
+
+    expect(mockedAxios).toHaveBeenCalledWith(
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          authorization: 'Bearer token-123',
+        }),
+      }),
+    );
+  });
+
   it('should inject X-Forwarded-For header', async () => {
     mockedAxios.mockResolvedValue({
       status: 200,
@@ -241,6 +262,24 @@ describe('createProxyMiddleware', () => {
     expect(mockedAxios).toHaveBeenCalledWith(
       expect.objectContaining({
         params: expect.objectContaining({ page: '1', limit: '10' }),
+      }),
+    );
+  });
+
+  it('should prepend configured basePath when proxying', async () => {
+    mockedAxios.mockResolvedValue({
+      status: 200,
+      data: { ok: true },
+      headers: { 'content-type': 'application/json' },
+    });
+
+    const app = buildTestApp('auth', { ...AUTH_CONFIG, basePath: '/auth' });
+    const res = await request(app).post('/api/v1/auth/login').send({ email: 'admin@uat.local' });
+
+    expect(res.status).toBe(200);
+    expect(mockedAxios).toHaveBeenCalledWith(
+      expect.objectContaining({
+        url: 'http://localhost:3002/auth/login',
       }),
     );
   });

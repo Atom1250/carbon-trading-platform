@@ -101,7 +101,45 @@ export class SettlementService {
       [txHash, tradeId],
     );
 
-    return rows[0];
+    const settledTrade = rows[0];
+
+    await this.db.query(
+      `INSERT INTO dvp_settlements (
+         trade_id, buyer_institution_id, seller_institution_id,
+         buyer_user_id, seller_user_id, asset_id, token_quantity,
+         cash_amount, currency, settlement_tx_hash, status, settled_at
+       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'USD', $9, 'settled', NOW())
+       ON CONFLICT (trade_id) DO UPDATE SET
+         settlement_tx_hash = EXCLUDED.settlement_tx_hash,
+         settled_at = EXCLUDED.settled_at,
+         status = 'settled'`,
+      [
+        settledTrade.id,
+        settledTrade.buyerInstitutionId,
+        settledTrade.sellerInstitutionId,
+        settledTrade.buyerUserId,
+        settledTrade.sellerUserId,
+        settledTrade.assetId,
+        settledTrade.quantity,
+        settledTrade.totalAmount,
+        txHash,
+      ],
+    );
+
+    await this.upsertWalletTokenPosition(
+      settledTrade.buyerInstitutionId,
+      settledTrade.buyerUserId,
+      settledTrade.assetId,
+      parseFloat(settledTrade.quantity),
+    );
+    await this.upsertWalletTokenPosition(
+      settledTrade.sellerInstitutionId,
+      settledTrade.sellerUserId,
+      settledTrade.assetId,
+      -parseFloat(settledTrade.quantity),
+    );
+
+    return settledTrade;
   }
 
   async failTrade(tradeId: string, reason: string): Promise<Trade> {
@@ -182,5 +220,22 @@ export class SettlementService {
     );
 
     return { trades, total };
+  }
+
+  private async upsertWalletTokenPosition(
+    institutionId: string,
+    userId: string,
+    assetId: string,
+    quantityDelta: number,
+  ): Promise<void> {
+    await this.db.query(
+      `INSERT INTO wallet_token_positions (
+         institution_id, user_id, asset_id, token_type, quantity, updated_at
+       ) VALUES ($1, $2, $3, 'asset_token', $4, NOW())
+       ON CONFLICT (institution_id, user_id, asset_id, token_type) DO UPDATE SET
+         quantity = wallet_token_positions.quantity + EXCLUDED.quantity,
+         updated_at = NOW()`,
+      [institutionId, userId, assetId, quantityDelta],
+    );
   }
 }

@@ -11,7 +11,7 @@ const mockPayload = {
 
 function makeTokenService(verifyResult: unknown) {
   return {
-    verifyAccessToken: jest.fn().mockImplementation((token: string) => {
+    verifyAccessToken: jest.fn().mockImplementation(() => {
       if (verifyResult instanceof Error) throw verifyResult;
       return verifyResult;
     }),

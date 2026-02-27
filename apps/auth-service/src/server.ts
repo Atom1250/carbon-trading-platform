@@ -9,6 +9,7 @@ import { RegistrationService } from './services/RegistrationService.js';
 import { PasswordResetService } from './services/PasswordResetService.js';
 import { LoginAttemptService } from './services/LoginAttemptService.js';
 import { SessionCleanupService } from './services/SessionCleanupService.js';
+import { AdminUserService } from './services/AdminUserService.js';
 
 const logger = createLogger('auth-service');
 
@@ -23,6 +24,7 @@ async function main(): Promise<void> {
   const passwordResetService = new PasswordResetService(db);
   const loginAttemptService = new LoginAttemptService(db);
   const sessionCleanupService = new SessionCleanupService(db);
+  const adminUserService = new AdminUserService(db);
 
   const app = createApp({
     tokenService,
@@ -31,6 +33,7 @@ async function main(): Promise<void> {
     registrationService,
     passwordResetService,
     loginAttemptService,
+    adminUserService,
     corsOrigins: config.CORS_ORIGINS,
   });
 

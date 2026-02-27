@@ -1,0 +1,213 @@
+{
+  "meta": {
+    "version": 1,
+    "domain": "trading",
+    "figmaSourceType": "figma-make",
+    "figmaSourceId": "JJ699dfG1uMDGRHCIsNum8",
+    "figmaFileUrl": "",
+    "figmaFileKey": "",
+    "pageNodeId": "0:1",
+    "appNodeId": "0:7",
+    "lastUpdated": "2026-02-27",
+    "notes": [
+      "Fill frameNodeId when final Figma frame node IDs are confirmed.",
+      "Use figmaFrameName as the naming contract if IDs are not yet locked."
+    ]
+  },
+  "types": {
+    "codeTarget": "src/lib/trading/types.ts",
+    "entities": [
+      "CreditListing",
+      "RFQ",
+      "Quote",
+      "Trade",
+      "SettlementMilestone",
+      "PositionLot",
+      "RetirementInstruction"
+    ]
+  },
+  "api": {
+    "codeTarget": "src/lib/trading/api.ts",
+    "operations": [
+      "listListings",
+      "getListing",
+      "listRfqs",
+      "getRfq",
+      "createRfq",
+      "listQuotes",
+      "listQuotesForRfq",
+      "updateQuoteStatus",
+      "acceptQuote",
+      "listTrades",
+      "getTrade",
+      "getSettlementTimeline",
+      "updateTradeStatus",
+      "updateMilestone",
+      "listPositions",
+      "listRetirements",
+      "createRetirementInstruction"
+    ]
+  },
+  "routes": [
+    {
+      "route": "/trading",
+      "routeAliases": [
+        "/trading/marketplace",
+        "/trading/dashboard"
+      ],
+      "figmaFrameName": "TRD-01 Marketplace",
+      "frameNodeId": "",
+      "figmaSourceUri": "file://figma/make/source/JJ699dfG1uMDGRHCIsNum8/src/app/pages/trading/Marketplace.tsx",
+      "codeTarget": "src/app/(portal)/trading/page.tsx"
+    },
+    {
+      "route": "/trading/listings/[listingId]",
+      "figmaFrameName": "TRD-02 Listing Detail",
+      "frameNodeId": "",
+      "figmaSourceUri": "file://figma/make/source/JJ699dfG1uMDGRHCIsNum8/src/app/pages/trading/ListingDetail.tsx",
+      "codeTarget": "src/app/(portal)/trading/listings/[listingId]/page.tsx"
+    },
+    {
+      "route": "/trading/rfq/new",
+      "figmaFrameName": "TRD-03 RFQ Wizard",
+      "frameNodeId": "",
+      "figmaSourceUri": "file://figma/make/source/JJ699dfG1uMDGRHCIsNum8/src/app/pages/trading/RFQWizard.tsx",
+      "codeTarget": "src/app/(portal)/trading/rfq/new/page.tsx"
+    },
+    {
+      "route": "/trading/rfq/[rfqId]",
+      "figmaFrameName": "TRD-04 RFQ Detail",
+      "frameNodeId": "",
+      "figmaSourceUri": "file://figma/make/source/JJ699dfG1uMDGRHCIsNum8/src/app/pages/trading/RFQDetail.tsx",
+      "codeTarget": "src/app/(portal)/trading/rfq/[rfqId]/page.tsx"
+    },
+    {
+      "route": "/trading/quotes",
+      "figmaFrameName": "TRD-05 Quotes Blotter",
+      "frameNodeId": "",
+      "figmaSourceUri": "file://figma/make/source/JJ699dfG1uMDGRHCIsNum8/src/app/pages/trading/QuotesBlotter.tsx",
+      "codeTarget": "src/app/(portal)/trading/quotes/page.tsx"
+    },
+    {
+      "route": "/trading/trades",
+      "figmaFrameName": "TRD-06 Trades Blotter",
+      "frameNodeId": "",
+      "figmaSourceUri": "file://figma/make/source/JJ699dfG1uMDGRHCIsNum8/src/app/pages/trading/TradesBlotter.tsx",
+      "codeTarget": "src/app/(portal)/trading/trades/page.tsx"
+    },
+    {
+      "route": "/trading/trades/[tradeId]",
+      "figmaFrameName": "TRD-07 Trade Detail",
+      "frameNodeId": "",
+      "figmaSourceUri": "file://figma/make/source/JJ699dfG1uMDGRHCIsNum8/src/app/pages/trading/TradeDetail.tsx",
+      "codeTarget": "src/app/(portal)/trading/trades/[tradeId]/page.tsx"
+    },
+    {
+      "route": "/trading/positions",
+      "figmaFrameName": "TRD-08 Positions",
+      "frameNodeId": "",
+      "figmaSourceUri": "file://figma/make/source/JJ699dfG1uMDGRHCIsNum8/src/app/pages/trading/Positions.tsx",
+      "codeTarget": "src/app/(portal)/trading/positions/page.tsx"
+    },
+    {
+      "route": "/trading/retirements",
+      "figmaFrameName": "TRD-09 Retirements",
+      "frameNodeId": "",
+      "figmaSourceUri": "file://figma/make/source/JJ699dfG1uMDGRHCIsNum8/src/app/pages/trading/Retirements.tsx",
+      "codeTarget": "src/app/(portal)/trading/retirements/page.tsx"
+    }
+  ],
+  "components": [
+    {
+      "name": "CreditListingCard",
+      "figmaComponentName": "C-CreditListingCard",
+      "componentNodeId": "",
+      "figmaSourceUri": "file://figma/make/source/JJ699dfG1uMDGRHCIsNum8/src/app/components/trading/CreditListingCard.tsx",
+      "codeTarget": "src/components/trading/CreditListingCard.tsx"
+    },
+    {
+      "name": "IndicativePriceChip",
+      "figmaComponentName": "C-IndicativePriceChip",
+      "componentNodeId": "",
+      "figmaSourceUri": "file://figma/make/source/JJ699dfG1uMDGRHCIsNum8/src/app/components/trading/IndicativePriceChip.tsx",
+      "codeTarget": "src/components/trading/IndicativePriceChip.tsx"
+    },
+    {
+      "name": "AvailabilityChip",
+      "figmaComponentName": "C-AvailabilityChip",
+      "componentNodeId": "",
+      "figmaSourceUri": "file://figma/make/source/JJ699dfG1uMDGRHCIsNum8/src/app/components/trading/AvailabilityChip.tsx",
+      "codeTarget": "src/components/trading/AvailabilityChip.tsx"
+    },
+    {
+      "name": "AttributeBadges",
+      "figmaComponentName": "C-AttributeBadges",
+      "componentNodeId": "",
+      "figmaSourceUri": "file://figma/make/source/JJ699dfG1uMDGRHCIsNum8/src/app/components/trading/AttributeBadges.tsx",
+      "codeTarget": "src/components/trading/AttributeBadges.tsx"
+    },
+    {
+      "name": "FilterBarQuick",
+      "figmaComponentName": "C-FilterBarQuick",
+      "componentNodeId": "",
+      "figmaSourceUri": "file://figma/make/source/JJ699dfG1uMDGRHCIsNum8/src/app/components/trading/FilterBarQuick.tsx",
+      "codeTarget": "src/components/trading/FilterBarQuick.tsx"
+    },
+    {
+      "name": "FilterDrawerAdvanced",
+      "figmaComponentName": "C-FilterDrawerAdvanced",
+      "componentNodeId": "",
+      "figmaSourceUri": "file://figma/make/source/JJ699dfG1uMDGRHCIsNum8/src/app/components/trading/FilterDrawerAdvanced.tsx",
+      "codeTarget": "src/components/trading/FilterDrawerAdvanced.tsx"
+    },
+    {
+      "name": "RFQStepper",
+      "figmaComponentName": "C-RFQStepper",
+      "componentNodeId": "",
+      "figmaSourceUri": "file://figma/make/source/JJ699dfG1uMDGRHCIsNum8/src/app/components/trading/RFQStepper.tsx",
+      "codeTarget": "src/components/trading/RFQStepper.tsx"
+    },
+    {
+      "name": "QuoteCard",
+      "figmaComponentName": "C-QuoteCard",
+      "componentNodeId": "",
+      "figmaSourceUri": "file://figma/make/source/JJ699dfG1uMDGRHCIsNum8/src/app/components/trading/QuoteCard.tsx",
+      "codeTarget": "src/components/trading/QuoteCard.tsx"
+    },
+    {
+      "name": "BlotterTable",
+      "figmaComponentName": "C-BlotterTable",
+      "componentNodeId": "",
+      "figmaSourceUri": "file://figma/make/source/JJ699dfG1uMDGRHCIsNum8/src/app/components/trading/BlotterTable.tsx",
+      "codeTarget": "src/components/trading/BlotterTable.tsx"
+    },
+    {
+      "name": "SettlementTimeline",
+      "figmaComponentName": "C-SettlementTimeline",
+      "componentNodeId": "",
+      "figmaSourceUri": "file://figma/make/source/JJ699dfG1uMDGRHCIsNum8/src/app/components/trading/SettlementTimeline.tsx",
+      "codeTarget": "src/components/trading/SettlementTimeline.tsx"
+    },
+    {
+      "name": "EvidenceUploadTile",
+      "figmaComponentName": "C-EvidenceUploadTile",
+      "componentNodeId": "",
+      "figmaSourceUri": "file://figma/make/source/JJ699dfG1uMDGRHCIsNum8/src/app/components/trading/EvidenceUploadTile.tsx",
+      "codeTarget": "src/components/trading/EvidenceUploadTile.tsx"
+    },
+    {
+      "name": "PositionLotRow",
+      "figmaComponentName": "C-PositionLotRow",
+      "componentNodeId": "",
+      "figmaSourceUri": "file://figma/make/source/JJ699dfG1uMDGRHCIsNum8/src/app/components/trading/PositionLotRow.tsx",
+      "codeTarget": "src/components/trading/PositionLotRow.tsx"
+    },
+    {
+      "name": "RetirementForm",
+      "figmaComponentName": "C-RetirementForm",
+      "componentNodeId": "",
+      "figmaSourceUri": "file://figma/make/source/JJ699dfG1uMDGRHCIsNum8/src/app/components/trading/RetirementForm.tsx",
+      "codeTarget": "src/components/trading/RetirementForm.tsx"
+    }
+  ]
+}

@@ -5,16 +5,11 @@
   "implicitDependencies": ["@carbon-trading-platform/carbon-trading-platform"],
   "targets": {
     "e2e": {
-      "executor": "@nx/jest:jest",
-      "outputs": ["{workspaceRoot}/coverage/{e2eProjectRoot}"],
+      "executor": "nx:run-commands",
+      "outputs": ["{workspaceRoot}/test-output/playwright-report"],
       "options": {
-        "jestConfig": "apps/carbon-trading-platform-e2e/jest.config.cts",
-        "passWithNoTests": true
-      },
-      "dependsOn": [
-        "@carbon-trading-platform/carbon-trading-platform:build",
-        "@carbon-trading-platform/carbon-trading-platform:serve"
-      ]
+        "command": "playwright test --config apps/carbon-trading-platform-e2e/playwright.config.ts"
+      }
     }
   }
 }

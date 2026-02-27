@@ -1,0 +1,15 @@
+{
+  "name": "@carbon-trading-platform/event-indexing-service",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/event-indexing-service/src",
+  "projectType": "application",
+  "targets": {
+    "test": {
+      "executor": "@nx/jest:jest",
+      "options": {
+        "jestConfig": "apps/event-indexing-service/jest.config.cjs",
+        "passWithNoTests": false
+      }
+    }
+  }
+}

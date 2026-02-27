@@ -45,8 +45,9 @@ export function errorHandler(
   err: unknown,
   req: Request,
   res: Response,
-  _next: NextFunction,
+  next: NextFunction,
 ): void {
+  void next;
   const requestId = req.requestId ?? 'unknown';
   const instance = req.path;
 

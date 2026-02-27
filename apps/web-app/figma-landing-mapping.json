@@ -1,0 +1,157 @@
+{
+  "meta": {
+    "version": 1,
+    "domain": "landing-navigation",
+    "figmaSourceType": "figma-make",
+    "figmaSourceId": "JJ699dfG1uMDGRHCIsNum8",
+    "figmaFileUrl": "",
+    "figmaFileKey": "",
+    "pageNodeId": "0:1",
+    "appNodeId": "0:7",
+    "lastUpdated": "2026-02-27",
+    "notes": [
+      "Use exact frame names LND-01..05 and NAV-01..03.",
+      "Fill frameNodeId/componentNodeId after frames are finalized in Figma."
+    ]
+  },
+  "userContext": {
+    "typesCodeTarget": "src/lib/user/types.ts",
+    "resolverCodeTarget": "src/lib/user/current.ts",
+    "navConfigTarget": "src/lib/nav/config.ts",
+    "navTypesTarget": "src/lib/nav/types.ts"
+  },
+  "frames": [
+    {
+      "frameName": "LND-01 Dashboard",
+      "frameNodeId": "",
+      "route": "/dashboard",
+      "figmaSourceUri": "file://figma/make/source/JJ699dfG1uMDGRHCIsNum8/src/app/pages/LandingPage.tsx",
+      "codeTarget": "src/app/(portal)/dashboard/page.tsx"
+    },
+    {
+      "frameName": "LND-02 Dashboard (Project Owner)",
+      "frameNodeId": "",
+      "route": "/dashboard?persona=PROJECT_OWNER",
+      "codeTarget": "src/app/(portal)/dashboard/page.tsx"
+    },
+    {
+      "frameName": "LND-03 Dashboard (Investor)",
+      "frameNodeId": "",
+      "route": "/dashboard?persona=INVESTOR",
+      "codeTarget": "src/app/(portal)/dashboard/page.tsx"
+    },
+    {
+      "frameName": "LND-04 Dashboard (Carbon Trader)",
+      "frameNodeId": "",
+      "route": "/dashboard?persona=CARBON_TRADER",
+      "codeTarget": "src/app/(portal)/dashboard/page.tsx"
+    },
+    {
+      "frameName": "LND-05 Dashboard (Admin)",
+      "frameNodeId": "",
+      "route": "/dashboard?persona=ADMIN",
+      "codeTarget": "src/app/(portal)/dashboard/page.tsx"
+    },
+    {
+      "frameName": "NAV-01 Sidebar",
+      "frameNodeId": "",
+      "codeTarget": "src/components/nav/SidebarNav.tsx"
+    },
+    {
+      "frameName": "NAV-02 Breadcrumbs",
+      "frameNodeId": "",
+      "codeTarget": "src/components/nav/Breadcrumbs.tsx"
+    },
+    {
+      "frameName": "NAV-03 Command Palette",
+      "frameNodeId": "",
+      "codeTarget": "src/components/nav/CommandPalette.tsx"
+    }
+  ],
+  "routes": [
+    {
+      "route": "/dashboard",
+      "codeTarget": "src/app/(portal)/dashboard/page.tsx"
+    },
+    {
+      "route": "/owner",
+      "codeTarget": "src/app/(portal)/owner/page.tsx"
+    },
+    {
+      "route": "/owner/projects/new",
+      "codeTarget": "src/app/(portal)/owner/projects/new/page.tsx"
+    },
+    {
+      "route": "/investor",
+      "codeTarget": "src/app/(portal)/investor/page.tsx"
+    },
+    {
+      "route": "/investor/search",
+      "codeTarget": "src/app/(portal)/investor/search/page.tsx"
+    },
+    {
+      "route": "/trading",
+      "codeTarget": "src/app/(portal)/trading/page.tsx"
+    },
+    {
+      "route": "/onboarding/start",
+      "codeTarget": "src/app/(portal)/onboarding/start/page.tsx"
+    },
+    {
+      "route": "/admin/dashboard",
+      "codeTarget": "src/app/(portal)/admin/dashboard/page.tsx"
+    }
+  ],
+  "components": [
+    {
+      "name": "C-SidebarNav",
+      "componentNodeId": "",
+      "codeTarget": "src/components/nav/SidebarNav.tsx"
+    },
+    {
+      "name": "C-Breadcrumbs",
+      "componentNodeId": "",
+      "codeTarget": "src/components/nav/Breadcrumbs.tsx"
+    },
+    {
+      "name": "C-CommandPaletteModal",
+      "componentNodeId": "",
+      "codeTarget": "src/components/nav/CommandPalette.tsx"
+    },
+    {
+      "name": "C-HeroStartHere",
+      "componentNodeId": "",
+      "codeTarget": "src/app/(portal)/dashboard/page.tsx"
+    },
+    {
+      "name": "C-QuickActionsPanel",
+      "componentNodeId": "",
+      "codeTarget": "src/components/landing/QuickActions.tsx"
+    },
+    {
+      "name": "C-RecentPanel",
+      "componentNodeId": "",
+      "codeTarget": "src/components/landing/RecentActivity.tsx"
+    },
+    {
+      "name": "C-WorkQueuePanel",
+      "componentNodeId": "",
+      "codeTarget": "src/components/landing/WorkQueue.tsx"
+    },
+    {
+      "name": "C-PlatformHealthPanel",
+      "componentNodeId": "",
+      "codeTarget": "src/components/landing/PlatformHealth.tsx"
+    },
+    {
+      "name": "C-PageHeader",
+      "componentNodeId": "",
+      "codeTarget": "src/components/layout/PortalShell.tsx"
+    },
+    {
+      "name": "C-UserContextChip",
+      "componentNodeId": "",
+      "codeTarget": "src/components/layout/PortalShell.tsx"
+    }
+  ]
+}

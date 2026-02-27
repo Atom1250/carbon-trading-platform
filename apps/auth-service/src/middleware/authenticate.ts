@@ -37,3 +37,19 @@ export function requireAuth(req: Request, _res: Response, next: NextFunction): v
   }
   next();
 }
+
+export function requireRoles(...roles: string[]) {
+  return function requireRole(req: Request, _res: Response, next: NextFunction): void {
+    if (!req.user) {
+      next(new AuthenticationError());
+      return;
+    }
+
+    if (!roles.includes(req.user.role)) {
+      next(new AuthenticationError('Insufficient permissions'));
+      return;
+    }
+
+    next();
+  };
+}

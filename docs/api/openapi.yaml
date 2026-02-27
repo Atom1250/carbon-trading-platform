@@ -1,0 +1,141 @@
+openapi: 3.0.3
+info:
+  title: Carbon Trading Platform API
+  version: 1.0.0
+  description: |
+    Consolidated API contract for core platform workflows.
+servers:
+  - url: https://api.carbon-platform.com
+paths:
+  /health:
+    get:
+      summary: Service health check
+      responses:
+        '200':
+          description: Service healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: healthy
+  /api/v1/auth/login:
+    post:
+      summary: Authenticate user and return MFA challenge
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: MFA challenge created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginChallenge'
+  /api/v1/trading/rfq:
+    post:
+      summary: Create RFQ
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRfqRequest'
+      responses:
+        '201':
+          description: RFQ created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Rfq'
+    get:
+      summary: List RFQs
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+      responses:
+        '200':
+          description: RFQ list
+  /api/v1/trading/quotes/{quoteId}/accept:
+    post:
+      summary: Accept quote
+      parameters:
+        - in: path
+          name: quoteId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Quote accepted and trade created
+  /api/v1/ledger/deposits:
+    post:
+      summary: Create deposit
+      responses:
+        '201':
+          description: Deposit created
+  /api/v1/ledger/withdrawals:
+    post:
+      summary: Create withdrawal
+      responses:
+        '201':
+          description: Withdrawal created
+components:
+  schemas:
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 8
+    LoginChallenge:
+      type: object
+      properties:
+        challengeId:
+          type: string
+        mfaRequired:
+          type: boolean
+          example: true
+    CreateRfqRequest:
+      type: object
+      required: [assetId, requesterInstitutionId, requesterUserId, side, quantity]
+      properties:
+        assetId:
+          type: string
+          format: uuid
+        requesterInstitutionId:
+          type: string
+          format: uuid
+        requesterUserId:
+          type: string
+          format: uuid
+        side:
+          type: string
+          enum: [buy, sell]
+        quantity:
+          type: number
+          minimum: 0.00000001
+    Rfq:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [open, partially_filled, filled, cancelled, expired]
+        quantity:
+          type: string
+security:
+  - bearerAuth: []

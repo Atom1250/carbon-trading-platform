@@ -1,0 +1,215 @@
+{
+  "meta": {
+    "version": 1,
+    "figmaFileUrl": "",
+    "figmaFileKey": "",
+    "lastUpdated": "",
+    "notes": "Fill frameNodeId values after Figma frames are finalized."
+  },
+  "tokens": {
+    "source": "FIGMA_PROJECT_OWNER_DESIGN.md",
+    "codeTargets": [
+      "src/app/globals.css",
+      "tailwind.config.js"
+    ],
+    "variables": [
+      "background",
+      "foreground",
+      "card",
+      "card-foreground",
+      "primary",
+      "primary-foreground",
+      "secondary",
+      "secondary-foreground",
+      "muted",
+      "muted-foreground",
+      "accent",
+      "accent-foreground",
+      "destructive",
+      "destructive-foreground",
+      "border",
+      "ring",
+      "radius",
+      "sidebar",
+      "sidebar-foreground",
+      "sidebar-primary",
+      "sidebar-primary-foreground",
+      "sidebar-accent",
+      "sidebar-accent-foreground",
+      "sidebar-border",
+      "sidebar-ring"
+    ]
+  },
+  "components": [
+    {
+      "name": "Button",
+      "figmaComponentSet": "UI/Button",
+      "variants": [
+        "default",
+        "secondary",
+        "outline"
+      ],
+      "codeTarget": "src/components/ui/button.tsx"
+    },
+    {
+      "name": "Card",
+      "figmaComponentSet": "UI/Card",
+      "variants": [
+        "header",
+        "content"
+      ],
+      "codeTarget": "src/components/ui/card.tsx"
+    },
+    {
+      "name": "Badge",
+      "figmaComponentSet": "UI/Badge",
+      "variants": [
+        "default",
+        "secondary",
+        "outline"
+      ],
+      "codeTarget": "src/components/ui/badge.tsx"
+    },
+    {
+      "name": "Progress",
+      "figmaComponentSet": "UI/Progress",
+      "variants": [
+        "0",
+        "25",
+        "50",
+        "75",
+        "100"
+      ],
+      "codeTarget": "src/components/ui/progress.tsx"
+    },
+    {
+      "name": "Separator",
+      "figmaComponentSet": "UI/Separator",
+      "variants": [
+        "default"
+      ],
+      "codeTarget": "src/components/ui/separator.tsx"
+    },
+    {
+      "name": "PortalShell",
+      "figmaComponentSet": "Shell/Sidebar + Shell/Header",
+      "variants": [
+        "project-owner",
+        "admin"
+      ],
+      "codeTarget": "src/components/layout/PortalShell.tsx"
+    }
+  ],
+  "screens": [
+    {
+      "route": "/owner",
+      "figmaFrameNameDesktop": "Screen/owner/desktop-1440",
+      "figmaFrameNameTablet": "Screen/owner/tablet-1024",
+      "figmaFrameNameMobile": "Screen/owner/mobile-390",
+      "frameNodeIdDesktop": "",
+      "frameNodeIdTablet": "",
+      "frameNodeIdMobile": "",
+      "codeTarget": "src/app/(portal)/owner/page.tsx"
+    },
+    {
+      "route": "/owner/projects",
+      "figmaFrameNameDesktop": "Screen/owner-projects/desktop-1440",
+      "figmaFrameNameTablet": "Screen/owner-projects/tablet-1024",
+      "figmaFrameNameMobile": "Screen/owner-projects/mobile-390",
+      "frameNodeIdDesktop": "",
+      "frameNodeIdTablet": "",
+      "frameNodeIdMobile": "",
+      "codeTarget": "src/app/(portal)/owner/projects/page.tsx"
+    },
+    {
+      "route": "/owner/projects/new",
+      "figmaFrameNameDesktop": "Screen/owner-projects-new/desktop-1440",
+      "figmaFrameNameTablet": "",
+      "figmaFrameNameMobile": "",
+      "frameNodeIdDesktop": "",
+      "frameNodeIdTablet": "",
+      "frameNodeIdMobile": "",
+      "codeTarget": "src/app/(portal)/owner/projects/new/page.tsx"
+    },
+    {
+      "route": "/owner/projects/[projectId]",
+      "figmaFrameNameDesktop": "Screen/owner-project-detail/desktop-1440",
+      "figmaFrameNameTablet": "Screen/owner-project-detail/tablet-1024",
+      "figmaFrameNameMobile": "Screen/owner-project-detail/mobile-390",
+      "frameNodeIdDesktop": "",
+      "frameNodeIdTablet": "",
+      "frameNodeIdMobile": "",
+      "codeTarget": "src/app/(portal)/owner/projects/[projectId]/page.tsx"
+    },
+    {
+      "route": "/owner/messages",
+      "figmaFrameNameDesktop": "Screen/owner-messages/desktop-1440",
+      "figmaFrameNameTablet": "",
+      "figmaFrameNameMobile": "",
+      "frameNodeIdDesktop": "",
+      "frameNodeIdTablet": "",
+      "frameNodeIdMobile": "",
+      "codeTarget": "src/app/(portal)/owner/messages/page.tsx"
+    },
+    {
+      "route": "/owner/documents",
+      "figmaFrameNameDesktop": "Screen/owner-documents/desktop-1440",
+      "figmaFrameNameTablet": "",
+      "figmaFrameNameMobile": "",
+      "frameNodeIdDesktop": "",
+      "frameNodeIdTablet": "",
+      "frameNodeIdMobile": "",
+      "codeTarget": "src/app/(portal)/owner/documents/page.tsx"
+    },
+    {
+      "route": "/owner/tasks",
+      "figmaFrameNameDesktop": "Screen/owner-tasks/desktop-1440",
+      "figmaFrameNameTablet": "",
+      "figmaFrameNameMobile": "",
+      "frameNodeIdDesktop": "",
+      "frameNodeIdTablet": "",
+      "frameNodeIdMobile": "",
+      "codeTarget": "src/app/(portal)/owner/tasks/page.tsx"
+    },
+    {
+      "route": "/owner/settings",
+      "figmaFrameNameDesktop": "Screen/owner-settings/desktop-1440",
+      "figmaFrameNameTablet": "",
+      "figmaFrameNameMobile": "",
+      "frameNodeIdDesktop": "",
+      "frameNodeIdTablet": "",
+      "frameNodeIdMobile": "",
+      "codeTarget": "src/app/(portal)/owner/settings/page.tsx"
+    },
+    {
+      "route": "/investor",
+      "figmaFrameNameDesktop": "Screen/investor/desktop-1440",
+      "figmaFrameNameTablet": "",
+      "figmaFrameNameMobile": "",
+      "frameNodeIdDesktop": "",
+      "frameNodeIdTablet": "",
+      "frameNodeIdMobile": "",
+      "codeTarget": "src/app/(portal)/investor/page.tsx"
+    },
+    {
+      "route": "/investor/projects/[projectId]",
+      "figmaFrameNameDesktop": "Screen/investor-project/desktop-1440",
+      "figmaFrameNameTablet": "",
+      "figmaFrameNameMobile": "",
+      "frameNodeIdDesktop": "",
+      "frameNodeIdTablet": "",
+      "frameNodeIdMobile": "",
+      "codeTarget": "src/app/(portal)/investor/projects/[projectId]/page.tsx"
+    },
+    {
+      "route": "/admin",
+      "figmaFrameNameDesktop": "Screen/admin/desktop-1440",
+      "figmaFrameNameTablet": "",
+      "figmaFrameNameMobile": "",
+      "frameNodeIdDesktop": "",
+      "frameNodeIdTablet": "",
+      "frameNodeIdMobile": "",
+      "codeTarget": "src/app/(portal)/admin/page.tsx"
+    }
+  ]
+}

@@ -122,6 +122,7 @@ export class QuoteService {
   }
 
   async acceptQuote(quoteId: string, acceptedByUserId: string): Promise<Quote> {
+    void acceptedByUserId;
     const existing = await this.findById(quoteId);
 
     if (existing.status !== 'pending') {

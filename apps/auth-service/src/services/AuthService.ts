@@ -2,6 +2,7 @@ import bcrypt from 'bcrypt';
 import crypto from 'crypto';
 import { AuthenticationError } from '@libs/errors';
 import type { IDatabaseClient } from '@libs/database';
+import { NotFoundError } from '@libs/errors';
 import type { LoginResult, RefreshResult, RequestMeta, SafeUser, UserRow } from '../types/auth.types.js';
 import type { TokenService } from './TokenService.js';
 import type { MFAService } from './MFAService.js';
@@ -124,6 +125,23 @@ export class AuthService {
     }
 
     return this.issueTokens(user, meta);
+  }
+
+  async getCurrentUser(userId: string): Promise<SafeUser> {
+    const rows = await this.db.query<UserRow>(
+      `SELECT u.id, u.institution_id, u.email, u.password_hash,
+              u.first_name, u.last_name, u.role, u.is_active,
+              u.has_enabled_mfa, u.mfa_secret
+       FROM users u
+       WHERE u.id = $1 AND u.is_active = true`,
+      [userId],
+    );
+
+    if (rows.length === 0) {
+      throw new NotFoundError('User', userId);
+    }
+
+    return toSafeUser(rows[0]);
   }
 
   private async issueTokens(user: UserRow, meta: RequestMeta): Promise<{ accessToken: string; refreshToken: string }> {

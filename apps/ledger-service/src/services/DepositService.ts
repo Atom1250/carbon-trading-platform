@@ -6,7 +6,6 @@ import type {
   Deposit,
   CreateDepositDTO,
   DepositListQuery,
-  DepositMethod,
   DepositStatus,
   IPaymentProvider,
 } from '../types/ledger.types.js';

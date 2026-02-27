@@ -1,5 +1,4 @@
 import type { IDatabaseClient } from '@libs/database';
-import { NotFoundError } from '@libs/errors';
 import type {
   Trade,
   TradeConfirmation,

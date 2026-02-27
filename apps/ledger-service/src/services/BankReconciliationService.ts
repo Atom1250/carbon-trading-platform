@@ -9,7 +9,6 @@ import type {
   BankReconciliationReport,
   BankReconciliationListQuery,
   ImportBankStatementDTO,
-  ParsedBankEntry,
 } from '../types/ledger.types.js';
 
 const logger = createLogger('bank-reconciliation-service');

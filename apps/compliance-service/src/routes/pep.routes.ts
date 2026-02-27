@@ -4,11 +4,6 @@ import { z } from 'zod';
 import { ValidationError } from '@libs/errors';
 import type { PEPCheckingService } from '../services/PEPCheckingService.js';
 
-const PEP_CATEGORIES = [
-  'government_official', 'military', 'state_corp_executive',
-  'political_party_official', 'family_member', 'close_associate',
-] as const;
-
 const PEP_CHECK_STATUSES = ['clear', 'pep_identified', 'edd_required', 'edd_completed', 'edd_failed'] as const;
 const REVIEW_STATUSES = ['edd_completed', 'edd_failed'] as const;
 

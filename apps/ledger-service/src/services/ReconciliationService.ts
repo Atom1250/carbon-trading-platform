@@ -26,7 +26,7 @@ const DEFAULT_TOLERANCE = 0.01;
 export class ReconciliationService {
   constructor(private readonly db: IDatabaseClient) {}
 
-  async runReconciliation(runType: string = 'daily'): Promise<ReconciliationRun> {
+  async runReconciliation(runType = 'daily'): Promise<ReconciliationRun> {
     const startedAt = new Date();
 
     // Fetch all active account balances with debit/credit totals

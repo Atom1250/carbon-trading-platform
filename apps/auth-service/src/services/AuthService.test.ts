@@ -10,13 +10,6 @@ import bcrypt from 'bcrypt';
 
 const mockBcryptCompare = bcrypt.compare as jest.Mock;
 
-const TEST_CONFIG = {
-  JWT_ACCESS_SECRET: 'test-access-secret-that-is-at-least-32-chars-long',
-  JWT_REFRESH_SECRET: 'test-refresh-secret-that-is-at-least-32-chars-long',
-  JWT_ACCESS_EXPIRES_IN: '15m',
-  JWT_REFRESH_EXPIRES_IN: '7d',
-};
-
 const TEST_META = { ipAddress: '127.0.0.1', userAgent: 'jest-test' };
 
 const TEST_USER = {

@@ -26,7 +26,9 @@ const HOP_BY_HOP_HEADERS = new Set([
  */
 export function createProxyMiddleware(serviceName: string, serviceConfig: ServiceConfig) {
   return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    const targetUrl = `${serviceConfig.url}${req.path}`;
+    const normalizedBasePath = serviceConfig.basePath?.replace(/\/$/, '') ?? '';
+    const normalizedPath = req.path.startsWith('/') ? req.path : `/${req.path}`;
+    const targetUrl = `${serviceConfig.url}${normalizedBasePath}${normalizedPath}`;
 
     logger.info('Proxying request', {
       service: serviceName,
@@ -43,6 +45,7 @@ export function createProxyMiddleware(serviceName: string, serviceConfig: Servic
         data: req.body,
         headers: {
           'content-type': req.headers['content-type'] ?? 'application/json',
+          authorization: req.headers['authorization'] ?? '',
           'x-request-id': req.requestId ?? '',
           'x-forwarded-for': req.ip ?? req.socket.remoteAddress ?? '0.0.0.0',
           'x-forwarded-proto': req.protocol,

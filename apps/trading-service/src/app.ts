@@ -6,6 +6,7 @@ import { parseCorsOrigins } from '@libs/config';
 import { requestIdMiddleware } from './middleware/requestId.js';
 import { loggingMiddleware } from './middleware/logging.js';
 import { errorHandler } from './middleware/errorHandler.js';
+import { createCsrfProtection, createSecurityRateLimiter, type SecurityOptions } from './middleware/security.js';
 import { createRFQRouter } from './routes/rfq.routes.js';
 import { createQuoteRouter, createQuoteActionsRouter } from './routes/quote.routes.js';
 import { createTradeRouter, createFeeRouter } from './routes/trade.routes.js';
@@ -28,12 +29,37 @@ export interface TradingAppDependencies {
   tradingLimitsService?: TradingLimitsService;
   orderBookService?: OrderBookService;
   corsOrigins?: string;
+  security?: SecurityOptions;
 }
 
 export function createApp(deps: TradingAppDependencies): Express {
   const app = express();
 
-  app.use(helmet());
+  app.use(helmet({
+    contentSecurityPolicy: {
+      useDefaults: true,
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'"],
+        objectSrc: ["'none'"],
+      },
+    },
+  }));
+
+  app.use((req, res, next) => {
+    const startedAt = process.hrtime.bigint();
+    const originalEnd = res.end.bind(res);
+
+    res.end = ((...args: unknown[]) => {
+      const durationMs = Number(process.hrtime.bigint() - startedAt) / 1_000_000;
+      if (!res.headersSent) {
+        res.setHeader('X-Response-Time-Ms', durationMs.toFixed(2));
+      }
+      return originalEnd(...args as Parameters<typeof originalEnd>);
+    }) as typeof res.end;
+
+    next();
+  });
 
   const origins = parseCorsOrigins(
     deps.corsOrigins ?? process.env['CORS_ORIGINS'] ?? 'http://localhost:3000',
@@ -52,6 +78,8 @@ export function createApp(deps: TradingAppDependencies): Express {
 
   app.use(requestIdMiddleware);
   app.use(loggingMiddleware);
+  app.use(createSecurityRateLimiter(deps.security));
+  app.use(createCsrfProtection(deps.security));
 
   app.use('/rfq', createRFQRouter({
     rfqService: deps.rfqService,
@@ -92,6 +120,7 @@ export function createApp(deps: TradingAppDependencies): Express {
   }
 
   app.get('/health', (_req, res) => {
+    res.setHeader('Cache-Control', 'public, max-age=30, stale-while-revalidate=30');
     res.status(200).json({ status: 'healthy', service: 'trading-service' });
   });
 

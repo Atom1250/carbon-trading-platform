@@ -1,6 +1,6 @@
 import request from 'supertest';
 import { createApp } from '../app';
-import { NotFoundError, ValidationError } from '@libs/errors';
+import { NotFoundError } from '@libs/errors';
 
 jest.mock('@libs/logger', () => ({
   createLogger: jest.fn(() => ({

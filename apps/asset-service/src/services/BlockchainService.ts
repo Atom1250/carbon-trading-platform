@@ -1,6 +1,6 @@
 import { Contract, JsonRpcProvider, Wallet, parseUnits } from 'ethers';
 import { createLogger } from '@libs/logger';
-import { ServiceUnavailableError, ValidationError } from '@libs/errors';
+import { ServiceUnavailableError } from '@libs/errors';
 import type { BlockchainConfig, MintResult, BurnResult } from '../types/asset.types.js';
 
 const logger = createLogger('blockchain-service');

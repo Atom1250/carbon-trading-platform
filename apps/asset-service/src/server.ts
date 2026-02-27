@@ -23,21 +23,40 @@ const blockchainService = blockchainRpcUrl && blockchainPrivateKey && blockchain
   ? new BlockchainService({ rpcUrl: blockchainRpcUrl, privateKey: blockchainPrivateKey, contractAddress: blockchainContractAddress })
   : undefined;
 
+const mockBlockchainService = {
+  async mintToken(): Promise<{ txHash: string }> {
+    return { txHash: `0xmockmint${Date.now().toString(16)}` };
+  },
+  async burnToken(): Promise<{ txHash: string }> {
+    return { txHash: `0xmockburn${Date.now().toString(16)}` };
+  },
+  async getBalance(): Promise<string> {
+    return '0';
+  },
+  async approveKYC(): Promise<{ txHash: string }> {
+    return { txHash: `0xmockkyc${Date.now().toString(16)}` };
+  },
+  async isKYCApproved(): Promise<boolean> {
+    return true;
+  },
+};
+
 if (blockchainService) {
   logger.info('Blockchain service initialized');
 } else {
-  logger.warn('Blockchain service not configured — minting/retirement will be unavailable');
+  logger.warn('Blockchain service not configured — using mock blockchain adapter for local UAT');
 }
 
-const mintingService = blockchainService ? new MintingService(db, blockchainService) : undefined;
-const retirementService = blockchainService ? new RetirementService(db, blockchainService) : undefined;
+const blockchainAdapter = (blockchainService ?? mockBlockchainService) as BlockchainService;
+const mintingService = new MintingService(db, blockchainAdapter);
+const retirementService = new RetirementService(db, blockchainAdapter);
 
 const app = createApp({
   assetService,
   verificationService,
   blockchainService,
-  mintingService: mintingService as never,
-  retirementService: retirementService as never,
+  mintingService,
+  retirementService,
   corsOrigins: config.CORS_ORIGINS,
 });
 const port = config.PORT ?? 3004;

@@ -74,6 +74,12 @@ export function createApp(deps: AppDependencies): Express {
     if (registry['institutions']) {
       app.use('/api/v1/institutions', createProxyMiddleware('institutions', registry['institutions']));
     }
+    if (registry['projects']) {
+      app.use('/api/v1/projects', createProxyMiddleware('projects', registry['projects']));
+    }
+    if (registry['fundingRequests']) {
+      app.use('/api/v1/funding-requests', createProxyMiddleware('fundingRequests', registry['fundingRequests']));
+    }
     if (registry['assets']) {
       app.use('/api/v1/assets', createProxyMiddleware('assets', registry['assets']));
     }
@@ -85,6 +91,9 @@ export function createApp(deps: AppDependencies): Express {
     }
     if (registry['ledger']) {
       app.use('/api/v1/ledger', createProxyMiddleware('ledger', registry['ledger']));
+    }
+    if (registry['wallet']) {
+      app.use('/api/v1/wallet', createProxyMiddleware('wallet', registry['wallet']));
     }
   }
 

@@ -51,7 +51,6 @@ const STRUCTURING_THRESHOLD = 10_000;
 const STRUCTURING_TOTAL_THRESHOLD = 10_000;
 const ROUND_AMOUNT_DIVISOR = 1_000;
 const ROUND_AMOUNT_MIN = 5_000;
-const RAPID_TRADING_COUNT = 10;
 
 type RuleResult = {
   rule: string;

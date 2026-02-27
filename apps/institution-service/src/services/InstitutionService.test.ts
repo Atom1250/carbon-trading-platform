@@ -60,7 +60,7 @@ describe('InstitutionService', () => {
       });
 
       expect(result).toEqual(DB_ROW);
-      expect(db.query).toHaveBeenCalledTimes(2);
+      expect(db.query).toHaveBeenCalledTimes(3);
       const [insertSql, insertParams] = (db.query as jest.Mock).mock.calls[1] as [string, unknown[]];
       expect(insertSql).toContain('INSERT INTO institutions');
       expect(insertParams).toContain('Green Capital');
@@ -78,7 +78,7 @@ describe('InstitutionService', () => {
         countryCode: 'US',
       });
 
-      expect(db.query).toHaveBeenCalledTimes(1);
+      expect(db.query).toHaveBeenCalledTimes(2);
       const [sql] = (db.query as jest.Mock).mock.calls[0] as [string];
       expect(sql).toContain('INSERT INTO institutions');
     });

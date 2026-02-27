@@ -1,6 +1,6 @@
 import request from 'supertest';
 import { createApp } from '../app';
-import { NotFoundError, ValidationError, ServiceUnavailableError } from '@libs/errors';
+import { NotFoundError, ValidationError } from '@libs/errors';
 
 jest.mock('@libs/logger', () => ({
   createLogger: jest.fn(() => ({
@@ -43,8 +43,6 @@ const TX_HASH = '0xabc123def456789012345678901234567890123456789012345678901234a
 
 const PENDING_ASSET = { ...ASSET, status: 'pending_verification' };
 const VERIFIED_ASSET = { ...ASSET, status: 'verified' };
-const MINTED_ASSET = { ...ASSET, status: 'minted', tokenId: '123456', mintingTxHash: TX_HASH };
-
 const VERIFICATION_RECORD = {
   id: '880e8400-e29b-41d4-a716-446655440000',
   assetId: ASSET_ID,

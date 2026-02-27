@@ -3,10 +3,14 @@
   "version": "1.0.0",
   "description": "Carbon Trading Platform smart contracts",
   "private": true,
+  "engines": {
+    "node": ">=20 <23"
+  },
   "scripts": {
     "compile": "hardhat compile",
     "test": "hardhat test",
-    "node": "hardhat node"
+    "node": "hardhat node",
+    "deploy:local": "hardhat run scripts/deploy.ts --network hardhat"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox": "^4.0.0",

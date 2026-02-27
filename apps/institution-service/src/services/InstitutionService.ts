@@ -23,6 +23,23 @@ const SELECT_COLUMNS = `
 export class InstitutionService {
   constructor(private readonly db: IDatabaseClient) {}
 
+  private getDefaultLimitsByTier(tier: Institution['tier']): {
+    dailyLimitUsd: number;
+    singleTradeMinUsd: number;
+    singleTradeMaxUsd: number;
+  } {
+    if (tier === 'tier1') {
+      return { dailyLimitUsd: 0, singleTradeMinUsd: 1, singleTradeMaxUsd: 1_000_000 };
+    }
+    if (tier === 'tier2') {
+      return { dailyLimitUsd: 250_000, singleTradeMinUsd: 1, singleTradeMaxUsd: 250_000 };
+    }
+    if (tier === 'tier3') {
+      return { dailyLimitUsd: 1_000_000, singleTradeMinUsd: 1, singleTradeMaxUsd: 500_000 };
+    }
+    return { dailyLimitUsd: 2_000_000, singleTradeMinUsd: 1, singleTradeMaxUsd: 1_000_000 };
+  }
+
   async create(data: CreateInstitutionDTO): Promise<Institution> {
     if (data.registrationNumber) {
       const existing = await this.db.query<Institution>(
@@ -49,7 +66,16 @@ export class InstitutionService {
       ],
     );
 
-    return rows[0];
+    const created = rows[0];
+    const limits = this.getDefaultLimitsByTier(created.tier);
+    await this.db.query(
+      `INSERT INTO trading_limits (institution_id, daily_limit_usd, single_trade_min_usd, single_trade_max_usd)
+       VALUES ($1, $2, $3, $4)
+       ON CONFLICT (institution_id) DO NOTHING`,
+      [created.id, limits.dailyLimitUsd, limits.singleTradeMinUsd, limits.singleTradeMaxUsd],
+    );
+
+    return created;
   }
 
   async findById(id: string): Promise<Institution> {

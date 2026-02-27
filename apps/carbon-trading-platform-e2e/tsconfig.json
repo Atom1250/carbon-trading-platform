@@ -4,8 +4,9 @@
     "outDir": "out-tsc/@carbon-trading-platform/carbon-trading-platform-e2e",
     "esModuleInterop": true,
     "noUnusedLocals": false,
-    "noImplicitAny": false
+    "noImplicitAny": false,
+    "types": ["node", "@playwright/test"]
   },
-  "include": ["jest.config.ts", "src/**/*.ts"],
+  "include": ["playwright.config.ts", "tests/**/*.ts"],
   "references": []
 }
