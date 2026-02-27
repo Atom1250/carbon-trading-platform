@@ -261,7 +261,7 @@ services:
       - ./contracts:/app
     ports:
       - '${HARDHAT_HOST_PORT:-8545}:8545'
-    command: sh -c "npm install --quiet && npx hardhat node --hostname 0.0.0.0"
+    command: sh -c "npm install --quiet --legacy-peer-deps && npx hardhat node --hostname 0.0.0.0"
     profiles:
       - blockchain
 
