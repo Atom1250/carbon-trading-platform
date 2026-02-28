@@ -1,12 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import type { DashboardSnapshot } from "@/lib/api/contracts";
 
-export function WorkQueue() {
-  const items = [
-    { title: "Onboarding: Upload beneficial ownership evidence", meta: "Due in 2 days", severity: "BLOCKER" },
-    { title: "Trade settlement: Provide cash confirmation", meta: "RFQ -> Trade #T-1021", severity: "URGENT" },
-    { title: "Project readiness: Missing permits matrix", meta: "Project P-001", severity: "WARNING" },
-  ];
-
+export function WorkQueue({ items }: { items: DashboardSnapshot["workQueue"] }) {
   return (
     <Card>
       <CardHeader>
@@ -21,7 +16,7 @@ export function WorkQueue() {
             </div>
           </div>
         ))}
-        <div className="text-xs text-muted-foreground">TODO: connect to unified task engine and role-specific workflow states.</div>
+        {items.length === 0 && <div className="text-xs text-muted-foreground">No tasks at the moment.</div>}
       </CardContent>
     </Card>
   );

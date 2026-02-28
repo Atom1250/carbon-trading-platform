@@ -5,6 +5,7 @@ import { WorkQueue } from "@/components/landing/WorkQueue";
 import { RecentActivity } from "@/components/landing/RecentActivity";
 import { PlatformHealth } from "@/components/landing/PlatformHealth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { getDashboardSnapshot } from "@/lib/api/portal";
 
 function heroCopy(persona: string) {
   switch (persona) {
@@ -35,6 +36,7 @@ function heroCopy(persona: string) {
 
 export default async function Dashboard() {
   const user = await getCurrentUser();
+  const snapshot = await getDashboardSnapshot(user);
   const hero = heroCopy(user.persona);
 
   return (
@@ -67,12 +69,12 @@ export default async function Dashboard() {
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
         <div className="space-y-4 xl:col-span-1">
           <QuickActions user={user} />
-          <RecentActivity />
+          <RecentActivity recents={snapshot.recent} />
         </div>
 
         <div className="space-y-4 xl:col-span-2">
-          <WorkQueue />
-          <PlatformHealth user={user} />
+          <WorkQueue items={snapshot.workQueue} />
+          <PlatformHealth metrics={snapshot.health} />
         </div>
       </div>
     </div>

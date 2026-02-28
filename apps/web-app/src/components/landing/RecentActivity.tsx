@@ -1,13 +1,8 @@
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import type { DashboardSnapshot } from "@/lib/api/contracts";
 
-export function RecentActivity() {
-  const recents = [
-    { label: "Sunridge Solar SPV - Underwrite", href: "/investor/projects/p_001/underwrite", meta: "Viewed 2h ago" },
-    { label: "RFQ-001 - Quote Inbox", href: "/trading/rfq/rfq_001", meta: "Viewed yesterday" },
-    { label: "Onboarding - Institution profile", href: "/onboarding/start", meta: "Updated 3d ago" },
-  ];
-
+export function RecentActivity({ recents }: { recents: DashboardSnapshot["recent"] }) {
   return (
     <Card>
       <CardHeader>
@@ -22,6 +17,7 @@ export function RecentActivity() {
             <div className="whitespace-nowrap text-xs text-muted-foreground">{r.meta}</div>
           </div>
         ))}
+        {recents.length === 0 && <div className="text-xs text-muted-foreground">No recent activity yet.</div>}
       </CardContent>
     </Card>
   );
