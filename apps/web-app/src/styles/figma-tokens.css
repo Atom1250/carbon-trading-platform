@@ -1,0 +1,64 @@
+/* Auto-generated from apps/web-app/design/tokens/figma.tokens.json. Do not edit manually. */
+:root {
+  --background: #f6f7f9;
+  --foreground: #111827;
+  --card: #ffffff;
+  --card-foreground: #111827;
+  --popover: #ffffff;
+  --popover-foreground: #111827;
+  --primary: #0f2a43;
+  --primary-foreground: #ffffff;
+  --secondary: #e7edf4;
+  --secondary-foreground: #0f2a43;
+  --muted: #eef2f7;
+  --muted-foreground: #4b5563;
+  --accent: #dce7f4;
+  --accent-foreground: #0f2a43;
+  --destructive: #b42318;
+  --destructive-foreground: #ffffff;
+  --border: #d4dce7;
+  --input: #ffffff;
+  --ring: #8aa4c0;
+  --sidebar: #0c1f33;
+  --sidebar-foreground: #f8fafc;
+  --sidebar-primary: #1f4f7a;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #17324f;
+  --sidebar-accent-foreground: #f8fafc;
+  --sidebar-border: #244767;
+  --sidebar-ring: #5d86ad;
+  --radius: 0.75rem;
+  --font-size: 16px;
+  --font-family-base: "Manrope", "IBM Plex Sans", "Segoe UI", sans-serif;
+  --spacing-grid: 8px;
+}
+
+.dark {
+  --background: #0b1420;
+  --foreground: #f3f4f6;
+  --card: #111c2b;
+  --card-foreground: #f3f4f6;
+  --popover: #111c2b;
+  --popover-foreground: #f3f4f6;
+  --primary: #7cb0dd;
+  --primary-foreground: #0b1420;
+  --secondary: #1c2a3c;
+  --secondary-foreground: #f3f4f6;
+  --muted: #223349;
+  --muted-foreground: #c0cad8;
+  --accent: #253a52;
+  --accent-foreground: #f3f4f6;
+  --destructive: #f97066;
+  --destructive-foreground: #0b1420;
+  --border: #2b3f57;
+  --input: #132134;
+  --ring: #5d86ad;
+  --sidebar: #060d15;
+  --sidebar-foreground: #e5e7eb;
+  --sidebar-primary: #7cb0dd;
+  --sidebar-primary-foreground: #0b1420;
+  --sidebar-accent: #17324f;
+  --sidebar-accent-foreground: #e5e7eb;
+  --sidebar-border: #2b3f57;
+  --sidebar-ring: #7cb0dd;
+}

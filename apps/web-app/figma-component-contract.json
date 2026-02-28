@@ -1,0 +1,34 @@
+{
+  "meta": {
+    "version": "1.0.0",
+    "updatedAt": "2026-02-28",
+    "purpose": "Figma frame/component to production code contract"
+  },
+  "frames": {
+    "LND-01 Dashboard": "/dashboard",
+    "INV-01 Catalog": "/investor",
+    "ONB-01 Start": "/onboarding/start",
+    "TRD-01 Marketplace": "/trading",
+    "ADM-01 Dashboard": "/admin/dashboard"
+  },
+  "components": {
+    "C-SidebarNav": "src/components/nav/SidebarNav.tsx",
+    "C-Breadcrumbs": "src/components/nav/Breadcrumbs.tsx",
+    "C-CommandPaletteModal": "src/components/nav/CommandPalette.tsx",
+    "C-QuickActionsPanel": "src/components/landing/QuickActions.tsx",
+    "C-RecentPanel": "src/components/landing/RecentActivity.tsx",
+    "C-WorkQueuePanel": "src/components/landing/WorkQueue.tsx",
+    "C-PlatformHealthPanel": "src/components/landing/PlatformHealth.tsx",
+    "C-Stepper": "src/components/onboarding/OnboardingStepper.tsx",
+    "C-BlockersPanel": "src/components/onboarding/BlockersPanel.tsx",
+    "C-DecisionBar": "src/components/onboarding/admin/AdminDecisionBar.tsx",
+    "C-ProjectCard-Investor": "src/components/investor/ProjectCardInvestor.tsx",
+    "C-QuickFilterBar": "src/components/investor/search/QuickFilterBar.tsx",
+    "C-CashLedgerTable": "src/components/investor/underwrite/CashLedgerTable.tsx",
+    "C-CarbonLedgerTable": "src/components/investor/underwrite/CarbonLedgerTable.tsx",
+    "C-QATemplatesPanel": "src/components/investor/qa/QATemplatesPanel.tsx",
+    "C-QAThread": "src/components/investor/qa/QAThreadView.tsx",
+    "C-TradeSettlementConsole": "src/components/trading/TradeSettlementConsole.tsx",
+    "C-SettlementTimeline": "src/components/trading/SettlementTimeline.tsx"
+  }
+}

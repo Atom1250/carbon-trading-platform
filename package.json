@@ -22,6 +22,7 @@
     "uat:compose:up": "docker compose up --build -d",
     "uat:compose:logs": "docker compose logs -f",
     "uat:compose:down": "docker compose down",
+    "figma:tokens:sync": "node scripts/sync-figma-web-tokens.mjs",
     "figma:trading:validate": "node scripts/validate-figma-trading-mapping.mjs",
     "figma:landing:validate": "node scripts/validate-figma-landing-mapping.mjs"
   },
