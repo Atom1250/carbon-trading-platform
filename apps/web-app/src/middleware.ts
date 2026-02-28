@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 const PUBLIC_FILE = /\.(.*)$/;
+const figmaRuntimeEnabled = process.env["FIGMA_RUNTIME_ENABLED"] === "true";
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -9,15 +10,24 @@ export function middleware(request: NextRequest) {
   if (
     pathname.startsWith("/_next") ||
     pathname.startsWith("/api") ||
-    pathname.startsWith("/figma") ||
     PUBLIC_FILE.test(pathname)
   ) {
     return NextResponse.next();
   }
 
-  const url = request.nextUrl.clone();
-  url.pathname = pathname === "/" ? "/figma" : `/figma${pathname}`;
-  return NextResponse.rewrite(url);
+  // Keep /figma as an explicit preview-only surface.
+  if (pathname === "/figma" || pathname.startsWith("/figma/")) {
+    if (!figmaRuntimeEnabled) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/dashboard";
+      url.searchParams.delete("figma");
+      return NextResponse.redirect(url);
+    }
+    return NextResponse.next();
+  }
+
+  // Never rewrite portal routes to /figma. Production UI is portal-first.
+  return NextResponse.next();
 }
 
 export const config = {
