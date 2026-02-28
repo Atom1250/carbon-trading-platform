@@ -26,7 +26,7 @@ export const NAV_SECTIONS: NavSection[] = [
       {
         key: "projectOwner",
         label: "Project Owner Portal",
-        href: "/owner",
+        href: "/project-owner",
         visibilityByPersona: {
           PROJECT_OWNER: "VISIBLE",
           INVESTOR: "GATED",
@@ -74,7 +74,7 @@ export const NAV_SECTIONS: NavSection[] = [
       {
         key: "onboardingUser",
         label: "Client Onboarding",
-        href: "/onboarding/start",
+        href: "/onboarding",
         visibilityByPersona: {
           PROJECT_OWNER: "VISIBLE",
           INVESTOR: "VISIBLE",

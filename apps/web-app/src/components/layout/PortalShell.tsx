@@ -13,6 +13,7 @@ export function PortalShell({ children, user }: { children: ReactNode; user: Cur
     { match: (path) => path.startsWith("/admin"), label: "Admin Command Centre" },
     { match: (path) => path.startsWith("/trading"), label: "Carbon Trading Portal" },
     { match: (path) => path.startsWith("/investor"), label: "Investor Portal" },
+    { match: (path) => path.startsWith("/project-owner"), label: "Project Owner Portal" },
     { match: (path) => path.startsWith("/owner"), label: "Project Owner Portal" },
     { match: (path) => path.startsWith("/onboarding"), label: "Onboarding" },
     { match: (path) => path.startsWith("/dashboard"), label: "Unified Dashboard" },

@@ -5,10 +5,10 @@ import { Button } from "@/components/ui/button";
 
 export function QuickActions({ user }: { user: CurrentUser }) {
   const actions = [
-    { key: "createProject", label: "Create a new project", href: "/owner/projects/new", show: user.entitlements.projectOwnerPortal },
+    { key: "createProject", label: "Create a new project", href: "/project-owner/projects/new", show: user.entitlements.projectOwnerPortal },
     { key: "searchProjects", label: "Search investment opportunities", href: "/investor/search", show: user.entitlements.investorPortal },
     { key: "openMarket", label: "Browse carbon listings", href: "/trading", show: user.entitlements.tradingPortal },
-    { key: "startOnboarding", label: "Complete onboarding", href: "/onboarding/start", show: true },
+    { key: "startOnboarding", label: "Complete onboarding", href: "/onboarding", show: true },
   ].filter((a) => a.show);
 
   return (
