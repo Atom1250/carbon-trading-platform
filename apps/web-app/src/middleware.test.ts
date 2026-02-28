@@ -18,6 +18,7 @@ describe("middleware", () => {
 
   beforeEach(() => {
     jest.resetModules();
+    process.env.NODE_ENV = "test";
     nextMock.mockClear();
     redirectMock.mockClear();
   });
@@ -45,6 +46,7 @@ describe("middleware", () => {
   });
 
   it("allows /figma routes when runtime is enabled", async () => {
+    process.env.NODE_ENV = "development";
     process.env.FIGMA_RUNTIME_ENABLED = "true";
     const { middleware } = await import("./middleware");
 
@@ -53,5 +55,17 @@ describe("middleware", () => {
     expect(nextMock).toHaveBeenCalledTimes(1);
     expect(redirectMock).not.toHaveBeenCalled();
     expect(response).toEqual({ kind: "next" });
+  });
+
+  it("blocks /figma routes in production even when flag is enabled", async () => {
+    process.env.NODE_ENV = "production";
+    process.env.FIGMA_RUNTIME_ENABLED = "true";
+    const { middleware } = await import("./middleware");
+
+    const response = middleware(makeRequest("https://example.com/figma/trading"));
+
+    expect(redirectMock).toHaveBeenCalledTimes(1);
+    expect(nextMock).not.toHaveBeenCalled();
+    expect(response).toEqual({ kind: "redirect", url: "https://example.com/dashboard" });
   });
 });

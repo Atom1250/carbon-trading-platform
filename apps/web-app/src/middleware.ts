@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 const PUBLIC_FILE = /\.(.*)$/;
-const figmaRuntimeEnabled = process.env["FIGMA_RUNTIME_ENABLED"] === "true";
+const figmaRuntimeEnabled =
+  process.env["FIGMA_RUNTIME_ENABLED"] === "true" && process.env["NODE_ENV"] !== "production";
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
