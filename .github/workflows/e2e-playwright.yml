@@ -23,9 +23,13 @@ jobs:
 
       - name: Run service test gate
         run: |
+          npm run guard:web-middleware
           npx nx test @carbon-trading-platform/web-app
           npx nx test @carbon-trading-platform/ledger-service
           npx nx test @carbon-trading-platform/trading-service
+
+      - name: Run portal route smoke tests
+        run: npx playwright test --config apps/carbon-trading-platform-e2e/playwright.config.ts apps/carbon-trading-platform-e2e/tests/portal-routing.spec.ts
 
       - name: Run Playwright e2e suite
         run: npx nx run @carbon-trading-platform/carbon-trading-platform-e2e:e2e
