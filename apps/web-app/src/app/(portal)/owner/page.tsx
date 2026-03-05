@@ -1,4 +1,4 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { FigmaPage, FigmaPanel, FigmaStatGrid } from "@/components/figma/FigmaPortalPrimitives";
 import { listOwnerProjects } from "@/lib/api/client";
 
 export default async function OwnerDashboard() {
@@ -9,35 +9,20 @@ export default async function OwnerDashboard() {
       : Math.round(projects.reduce((acc, project) => acc + (project.readinessScore ?? 0), 0) / projects.length);
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">Dashboard</h1>
-
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm">Active Projects</CardTitle>
-          </CardHeader>
-          <CardContent className="text-2xl font-semibold">{projects.length}</CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm">Avg Readiness</CardTitle>
-          </CardHeader>
-          <CardContent className="text-2xl font-semibold">{avgReadiness}%</CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm">Investor Requests</CardTitle>
-          </CardHeader>
-          <CardContent className="text-2xl font-semibold">0</CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm">Open Q and A</CardTitle>
-          </CardHeader>
-          <CardContent className="text-2xl font-semibold">0</CardContent>
-        </Card>
-      </div>
-    </div>
+    <FigmaPage title="Dashboard" subtitle="Project owner control center for portfolio readiness and investor engagement.">
+      <FigmaStatGrid
+        stats={[
+          { key: "projects", label: "Active Projects", value: String(projects.length) },
+          { key: "readiness", label: "Avg Readiness", value: `${avgReadiness}%` },
+          { key: "requests", label: "Investor Requests", value: "0" },
+          { key: "qa", label: "Open Q and A", value: "0" },
+        ]}
+      />
+      <FigmaPanel title="Portfolio Pulse" subtitle="Quick view of owner-side readiness and engagement status.">
+        <div className="text-sm text-white/75">
+          Keep project readiness above 70% to improve investor discoverability and underwriting throughput.
+        </div>
+      </FigmaPanel>
+    </FigmaPage>
   );
 }
