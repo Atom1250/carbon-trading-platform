@@ -22,20 +22,22 @@ export function PortalShell({ children, user }: { children: ReactNode; user: Cur
   const pageLabel = titleByPath.find((item) => item.match(pathname))?.label ?? "Platform";
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-screen bg-[#060f1e] text-white">
       <div className="flex">
         <SidebarNav user={user} pathname={pathname} />
         <CommandPalette user={user} />
 
-        <main className="flex-1">
-          <header className="flex h-14 items-center justify-between border-b px-6">
-            <div className="text-sm text-muted-foreground">{pageLabel}</div>
-            <div className="text-sm text-muted-foreground">
-              Persona: <span className="font-medium text-foreground">{user.persona}</span>
+        <main className="flex-1 bg-[radial-gradient(circle_at_top_right,rgba(16,185,129,0.14),transparent_45%),linear-gradient(180deg,#071225_0%,#060f1e_100%)]">
+          <header className="flex h-16 items-center justify-between border-b border-white/10 px-6 backdrop-blur-md">
+            <div className="text-sm tracking-wide text-white/65">{pageLabel}</div>
+            <div className="text-sm text-white/65">
+              Persona: <span className="font-medium text-emerald-300">{user.persona}</span>
             </div>
           </header>
 
-          <div className="p-6">{children}</div>
+          <div className="p-6 text-white [&_.bg-card]:bg-white/5 [&_.border]:border-white/10 [&_.text-foreground]:text-white [&_.text-muted-foreground]:text-white/65">
+            {children}
+          </div>
         </main>
       </div>
     </div>
