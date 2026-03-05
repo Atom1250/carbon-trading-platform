@@ -1,17 +1,13 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { FigmaPage, FigmaPanel } from "@/components/figma/FigmaPortalPrimitives";
 
 export default function NewProjectWizard() {
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">Create Project</h1>
-      <Card>
-        <CardHeader>
-          <CardTitle>Wizard foundation</CardTitle>
-        </CardHeader>
-        <CardContent className="text-sm text-slate-500">
-          Next step: implement 7-step wizard with react-hook-form and zod schema.
-        </CardContent>
-      </Card>
-    </div>
+    <FigmaPage title="Create Project" subtitle="Figma-aligned project origination flow.">
+      <FigmaPanel title="Project Wizard" subtitle="Seven-step creation workflow container">
+        <div className="text-sm text-white/70">
+          Steps: Sponsor Profile, Project Scope, Carbon Methodology, Financial Model, Risk & Mitigation, Documents, Review & Submit.
+        </div>
+      </FigmaPanel>
+    </FigmaPage>
   );
 }

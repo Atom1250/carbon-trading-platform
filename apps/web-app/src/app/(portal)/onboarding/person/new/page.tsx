@@ -1,5 +1,5 @@
 import { OnboardingStepper } from "@/components/onboarding/OnboardingStepper";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { FigmaPage, FigmaPanel } from "@/components/figma/FigmaPortalPrimitives";
 
 export default function PersonalKycWizard() {
   const steps = [
@@ -10,18 +10,14 @@ export default function PersonalKycWizard() {
   ];
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">Personal KYC</h1>
+    <FigmaPage title="Personal KYC" subtitle="Progressive onboarding flow for individual verification and approval.">
       <OnboardingStepper steps={steps} />
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Wizard foundation</CardTitle>
-        </CardHeader>
-        <CardContent className="text-sm text-muted-foreground">
-          TODO: implement personal KYC wizard for linked users, including ID uploads and review/submit.
-        </CardContent>
-      </Card>
-    </div>
+      <FigmaPanel title="Wizard Configuration" subtitle="Current container aligned to Figma flow structure.">
+        <div className="text-sm text-white/70">
+          Next implementation slice: collect identity profile, document upload, screening confirmation, and final submission handoff.
+        </div>
+      </FigmaPanel>
+    </FigmaPage>
   );
 }

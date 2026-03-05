@@ -1,17 +1,15 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { FigmaListItem, FigmaPage, FigmaPanel } from "@/components/figma/FigmaPortalPrimitives";
 
 export default function JoinInstitution() {
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">Join an Institution</h1>
-      <Card>
-        <CardHeader>
-          <CardTitle>Invite Code</CardTitle>
-        </CardHeader>
-        <CardContent className="text-sm text-muted-foreground">
-          TODO: input invite code, validate, bind to institution, then route to /onboarding/person/new.
-        </CardContent>
-      </Card>
-    </div>
+    <FigmaPage title="Join an Institution" subtitle="Link your user profile to an approved institution onboarding case.">
+      <FigmaPanel title="Invite and Verification" subtitle="Use secure invite codes from institution admins.">
+        <div className="space-y-2">
+          <FigmaListItem title="Step 1: Enter Invite Code" body="Paste institution invite token and verify tenancy scope." />
+          <FigmaListItem title="Step 2: Confirm Legal Identity" body="Match user legal name and role with institution records." />
+          <FigmaListItem title="Step 3: Continue Personal KYC" body="Proceed to personal onboarding workflow and document upload." />
+        </div>
+      </FigmaPanel>
+    </FigmaPage>
   );
 }
