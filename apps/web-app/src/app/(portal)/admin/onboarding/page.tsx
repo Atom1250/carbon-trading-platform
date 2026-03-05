@@ -1,21 +1,27 @@
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { FigmaPage, FigmaPanel, FigmaStatGrid } from "@/components/figma/FigmaPortalPrimitives";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { listOnboardingCases } from "@/lib/onboarding/api";
 
 export default async function AdminOnboardingQueue() {
   const cases = await listOnboardingCases();
+  const openCases = cases.filter((entry) => entry.status === "DRAFT" || entry.status === "SUBMITTED" || entry.status === "IN_REVIEW").length;
+  const blockedCases = cases.filter((entry) => entry.status === "ACTION_REQUIRED").length;
+  const approvedCases = cases.filter((entry) => entry.status === "APPROVED").length;
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">Onboarding Queue</h1>
+    <FigmaPage title="Onboarding Queue" subtitle="Institutional and personal onboarding case oversight.">
+      <FigmaStatGrid
+        stats={[
+          { key: "total", label: "Total Cases", value: String(cases.length) },
+          { key: "open", label: "Open Cases", value: String(openCases) },
+          { key: "blocked", label: "Blocked Cases", value: String(blockedCases) },
+          { key: "approved", label: "Approved", value: String(approvedCases) },
+        ]}
+      />
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Cases</CardTitle>
-        </CardHeader>
-        <CardContent>
+      <FigmaPanel title="Cases" subtitle="Review queue with risk and reviewer assignment.">
           <Table>
             <TableHeader>
               <TableRow>
@@ -46,8 +52,7 @@ export default async function AdminOnboardingQueue() {
               ))}
             </TableBody>
           </Table>
-        </CardContent>
-      </Card>
-    </div>
+      </FigmaPanel>
+    </FigmaPage>
   );
 }

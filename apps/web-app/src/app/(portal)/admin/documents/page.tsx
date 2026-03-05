@@ -1,27 +1,39 @@
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { FigmaListItem, FigmaPage, FigmaPanel, FigmaStatGrid } from "@/components/figma/FigmaPortalPrimitives";
 import { getDocumentIssues } from "@/lib/admin/api";
 
 export default async function AdminDocumentsPage() {
   const issues = await getDocumentIssues();
+  const critical = issues.filter((item) => item.issueType === "MISSING_CRITICAL").length;
+  const expiring = issues.filter((item) => item.issueType === "EXPIRING").length;
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">Document Control Panel</h1>
-      <Card>
-        <CardHeader><CardTitle className="text-base">Document Issues</CardTitle></CardHeader>
-        <CardContent className="space-y-2 text-sm">
+    <FigmaPage title="Document Control Panel" subtitle="Document lifecycle integrity checks and remediation tracking.">
+      <FigmaStatGrid
+        stats={[
+          { key: "total", label: "Total Issues", value: String(issues.length) },
+          { key: "critical", label: "Critical Missing", value: String(critical) },
+          { key: "expiring", label: "Expiring Soon", value: String(expiring) },
+          { key: "control", label: "Control Status", value: "Monitored" },
+        ]}
+      />
+      <FigmaPanel title="Document Issues" subtitle="Flagged compliance and data quality issues requiring intervention.">
+        <div className="space-y-2 text-sm">
           {issues.map((d) => (
-            <div key={d.id} className="rounded-md border p-2">
-              <div className="flex items-center justify-between">
-                <div className="font-medium">{d.documentName}</div>
+            <div key={d.id} className="rounded-xl border border-white/10 bg-[#071326] p-3">
+              <div className="flex items-center justify-between gap-2">
+                <div className="font-medium text-white">{d.documentName}</div>
                 <Badge variant={d.issueType === "MISSING_CRITICAL" ? "destructive" : "outline"}>{d.issueType}</Badge>
               </div>
-              <div className="text-muted-foreground">{d.objectType} {d.objectId} | version {d.version}{d.dueAt ? ` | due ${d.dueAt}` : ""}</div>
+              <FigmaListItem
+                title={`${d.objectType} ${d.objectId}`}
+                meta={`version ${d.version}${d.dueAt ? ` | due ${d.dueAt}` : ""}`}
+                body={`Issue: ${d.issueType}`}
+              />
             </div>
           ))}
-        </CardContent>
-      </Card>
-    </div>
+        </div>
+      </FigmaPanel>
+    </FigmaPage>
   );
 }

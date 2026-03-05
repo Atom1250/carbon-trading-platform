@@ -1,6 +1,6 @@
 import { BlockersPanel } from "@/components/onboarding/BlockersPanel";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { FigmaPage, FigmaPanel, FigmaStatGrid } from "@/components/figma/FigmaPortalPrimitives";
 import { getOnboardingCase } from "@/lib/onboarding/api";
 
 export default async function PersonStatus({ params }: { params: { caseId: string } }) {
@@ -10,32 +10,36 @@ export default async function PersonStatus({ params }: { params: { caseId: strin
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold">Personal KYC Status</h1>
-          <div className="text-sm text-muted-foreground">{onboardingCase.person.fullName}</div>
-        </div>
+    <FigmaPage
+      title="Personal KYC Status"
+      subtitle={onboardingCase.person.fullName}
+      right={
         <div className="flex gap-2">
           <Badge variant="secondary">{onboardingCase.status}</Badge>
           <Badge variant="outline">Risk: {onboardingCase.riskRating}</Badge>
         </div>
-      </div>
+      }
+    >
+      <FigmaStatGrid
+        stats={[
+          { key: "screenings", label: "Screening Checks", value: String(onboardingCase.screening.length) },
+          { key: "documents", label: "Documents Uploaded", value: String(onboardingCase.documents.length) },
+          { key: "issues", label: "Field Issues", value: String(onboardingCase.fieldIssues.length) },
+          { key: "requests", label: "Document Requests", value: String(onboardingCase.documentRequests.length) },
+        ]}
+      />
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle className="text-base">Current Review State</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2 text-sm text-muted-foreground">
+        <FigmaPanel className="lg:col-span-2" title="Current Review State" subtitle="Latest reviewer and screening signals.">
+          <div className="space-y-2 text-sm text-white/75">
             <div>Linked institution: {onboardingCase.institutionId ?? "-"}</div>
             <div>Screening: {onboardingCase.screening.map((s) => `${s.type}:${s.status}`).join(" | ")}</div>
             <div>Documents: {onboardingCase.documents.length} uploaded</div>
-          </CardContent>
-        </Card>
+          </div>
+        </FigmaPanel>
 
         <BlockersPanel fieldIssues={onboardingCase.fieldIssues} documentRequests={onboardingCase.documentRequests} />
       </div>
-    </div>
+    </FigmaPage>
   );
 }
