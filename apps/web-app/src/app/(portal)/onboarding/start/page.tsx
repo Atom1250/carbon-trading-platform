@@ -1,33 +1,31 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { FigmaPage, FigmaPanel, FigmaStatGrid } from "@/components/figma/FigmaPortalPrimitives";
 
 export default function OnboardingStart() {
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">Client Onboarding</h1>
-
+    <FigmaPage title="Client Onboarding" subtitle="Entry point for institutional and personal KYC onboarding flows.">
+      <FigmaStatGrid
+        stats={[
+          { key: "tracks", label: "Onboarding Tracks", value: "2" },
+          { key: "entity", label: "Institutional KYC", value: "Enabled" },
+          { key: "individual", label: "Personal KYC", value: "Enabled" },
+          { key: "compliance", label: "Compliance Readiness", value: "Active" },
+        ]}
+      />
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Institutional Client</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3 text-sm text-muted-foreground">
-            Create an institutional onboarding case (entity KYC/AML, beneficial ownership, roster, documents).
-            <div>
-              <Button asChild className="mt-2">
-                <Link href="/onboarding/institution/new">Start Institutional Onboarding</Link>
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+        <FigmaPanel title="Institutional Client" subtitle="Entity onboarding for legal, ownership, and governance checks.">
+          <div className="space-y-3 text-sm text-white/75">
+            <p>Create an institutional onboarding case for entity KYC/AML, beneficial ownership, roster, and documents.</p>
+            <Button asChild className="mt-2">
+              <Link href="/onboarding/institution/new">Start Institutional Onboarding</Link>
+            </Button>
+          </div>
+        </FigmaPanel>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Personal User (linked to institution)</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3 text-sm text-muted-foreground">
-            Join an institution (invite code) and complete your personal KYC.
+        <FigmaPanel title="Personal User" subtitle="Individual onboarding linked to institution-level approval.">
+          <div className="space-y-3 text-sm text-white/75">
+            <p>Join an institution via invite code and complete your personal KYC profile.</p>
             <div className="mt-2 flex gap-2">
               <Button asChild variant="secondary">
                 <Link href="/onboarding/person/join">Join Institution</Link>
@@ -36,9 +34,9 @@ export default function OnboardingStart() {
                 <Link href="/onboarding/person/new">Start Personal KYC</Link>
               </Button>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </FigmaPanel>
       </div>
-    </div>
+    </FigmaPage>
   );
 }

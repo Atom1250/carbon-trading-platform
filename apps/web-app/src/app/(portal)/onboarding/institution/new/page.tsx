@@ -1,5 +1,5 @@
 import { OnboardingStepper } from "@/components/onboarding/OnboardingStepper";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { FigmaPage, FigmaPanel, FigmaStatGrid } from "@/components/figma/FigmaPortalPrimitives";
 
 export default function InstitutionOnboardingWizard() {
   const steps = [
@@ -12,18 +12,22 @@ export default function InstitutionOnboardingWizard() {
   ];
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">Institutional Onboarding</h1>
+    <FigmaPage title="Institutional Onboarding" subtitle="Structured 6-step entity KYC and risk intake workflow.">
+      <FigmaStatGrid
+        stats={[
+          { key: "steps", label: "Workflow Steps", value: String(steps.length) },
+          { key: "active", label: "Current Step", value: "Profile" },
+          { key: "draft", label: "Draft Save", value: "Planned" },
+          { key: "validation", label: "Validation Model", value: "Deterministic" },
+        ]}
+      />
       <OnboardingStepper steps={steps} />
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Wizard foundation</CardTitle>
-        </CardHeader>
-        <CardContent className="text-sm text-muted-foreground">
+      <FigmaPanel title="Wizard Foundation" subtitle="Implementation checkpoint for full production onboarding flow.">
+        <div className="text-sm text-white/75">
           TODO: implement 6-step wizard using react-hook-form and zod schemas with save draft and deterministic blockers.
-        </CardContent>
-      </Card>
-    </div>
+        </div>
+      </FigmaPanel>
+    </FigmaPage>
   );
 }
