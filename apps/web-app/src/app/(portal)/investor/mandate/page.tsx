@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { FigmaPage, FigmaPanel, FigmaStatGrid } from "@/components/figma/FigmaPortalPrimitives";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -40,17 +40,20 @@ export default function MandatePage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold">Investment Mandate</h1>
-        <div className="text-sm text-muted-foreground">Used to rank projects and drive saved searches.</div>
-      </div>
+    <FigmaPage title="Investment Mandate" subtitle="Mandate controls for deterministic ranking and search behavior.">
+      <FigmaStatGrid
+        stats={[
+          { key: "categories", label: "Categories", value: String(m.categories.length) },
+          { key: "stages", label: "Stages", value: String(m.stagesAllowed.length) },
+          { key: "instruments", label: "Instruments", value: String(m.instruments.length) },
+          { key: "saving", label: "Save Status", value: saving ? "Saving" : "Ready" },
+        ]}
+      />
 
       {error && <div className="rounded-md border border-destructive p-3 text-sm text-destructive">{error}</div>}
 
-      <Card>
-        <CardHeader><CardTitle className="text-base">Mandate settings (foundation)</CardTitle></CardHeader>
-        <CardContent className="space-y-4">
+      <FigmaPanel title="Mandate Settings (Foundation)" subtitle="Current editable mandate parameters and ranking weights.">
+        <div className="space-y-4">
           <div className="space-y-2">
             <Label>Name</Label>
             <Input value={m.name} onChange={(e) => setM({ ...m, name: e.target.value })} />
@@ -88,8 +91,8 @@ export default function MandatePage() {
           <Button onClick={onSave} disabled={saving}>{saving ? "Saving..." : "Save mandate"}</Button>
 
           <div className="text-sm text-muted-foreground">Replace CSV/JSON fields with multi-selects, ranges, and sliders in next pass.</div>
-        </CardContent>
-      </Card>
-    </div>
+        </div>
+      </FigmaPanel>
+    </FigmaPage>
   );
 }

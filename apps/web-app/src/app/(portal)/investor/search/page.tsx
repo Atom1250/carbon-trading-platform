@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { FigmaPage, FigmaPanel, FigmaStatGrid } from "@/components/figma/FigmaPortalPrimitives";
 import { ProjectCardInvestor } from "@/components/investor/ProjectCardInvestor";
 import { QuickFilterBar } from "@/components/investor/search/QuickFilterBar";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getInvestorMandate, listCatalog } from "@/lib/investor/api";
 import { useInvestorStore } from "@/lib/investor/store";
 import type { InvestorProjectCardModel } from "@/lib/investor/types";
@@ -37,26 +37,29 @@ export default function InvestorSearch() {
   useEffect(() => setResults(filtered), [filtered, setResults]);
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold">Advanced Search</h1>
-        <div className="text-sm text-muted-foreground">Quick filters now; add advanced underwriting criteria + saved searches next.</div>
-      </div>
+    <FigmaPage title="Advanced Search" subtitle="Filter and rank projects by mandate-aligned underwriting criteria.">
+      <FigmaStatGrid
+        stats={[
+          { key: "catalog", label: "Catalog Size", value: String(all.length) },
+          { key: "results", label: "Filtered Results", value: String(results.length) },
+          { key: "filters", label: "Quick Filters", value: "Enabled" },
+          { key: "saved", label: "Saved Search", value: "Planned" },
+        ]}
+      />
 
       <QuickFilterBar onChange={(q) => setQuickFilters(q)} />
 
-      <Card>
-        <CardHeader><CardTitle className="text-base">Advanced criteria (TODO)</CardTitle></CardHeader>
-        <CardContent className="text-sm text-muted-foreground">
+      <FigmaPanel title="Advanced Criteria (TODO)" subtitle="Upcoming deterministic underwriting filter set.">
+        <div className="text-sm text-white/75">
           Add ticket, instrument, tenor/coupon, DSCR, PPA status, permits, interconnection, methodology, risk threshold, and save-search.
-        </CardContent>
-      </Card>
+        </div>
+      </FigmaPanel>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         {results.map((p) => (
           <ProjectCardInvestor key={p.projectId} p={p} matchScore={matchStub(p)} />
         ))}
       </div>
-    </div>
+    </FigmaPage>
   );
 }

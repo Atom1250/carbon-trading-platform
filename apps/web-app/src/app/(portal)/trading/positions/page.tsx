@@ -1,5 +1,5 @@
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { FigmaPage, FigmaPanel, FigmaStatGrid } from "@/components/figma/FigmaPortalPrimitives";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { listPositions } from "@/lib/trading/api";
 
@@ -10,16 +10,16 @@ export default async function PositionsPage() {
   const retired = positions.filter((p) => p.status === "RETIRED").reduce((a, p) => a + p.qty, 0);
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">Positions</h1>
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-3 text-sm">
-        <div className="rounded-md border p-3">Held: <span className="font-medium">{held.toLocaleString()}</span></div>
-        <div className="rounded-md border p-3">Pending transfer: <span className="font-medium">{pending.toLocaleString()}</span></div>
-        <div className="rounded-md border p-3">Retired: <span className="font-medium">{retired.toLocaleString()}</span></div>
-      </div>
-      <Card>
-        <CardHeader><CardTitle className="text-base">Holdings by Lot</CardTitle></CardHeader>
-        <CardContent>
+    <FigmaPage title="Positions" subtitle="Portfolio lots and lifecycle status across held, pending, and retired credits.">
+      <FigmaStatGrid
+        stats={[
+          { key: "held", label: "Held", value: held.toLocaleString() },
+          { key: "pending", label: "Pending Transfer", value: pending.toLocaleString() },
+          { key: "retired", label: "Retired", value: retired.toLocaleString() },
+          { key: "lots", label: "Total Lots", value: String(positions.length) },
+        ]}
+      />
+      <FigmaPanel title="Holdings by Lot" subtitle="Lot-level inventory and status.">
           <Table>
             <TableHeader>
               <TableRow>
@@ -44,8 +44,7 @@ export default async function PositionsPage() {
               ))}
             </TableBody>
           </Table>
-        </CardContent>
-      </Card>
-    </div>
+      </FigmaPanel>
+    </FigmaPage>
   );
 }

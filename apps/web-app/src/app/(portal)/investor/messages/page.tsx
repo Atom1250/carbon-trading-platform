@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { FigmaPage, FigmaPanel, FigmaStatGrid } from "@/components/figma/FigmaPortalPrimitives";
 import { QATemplatesPanel } from "@/components/investor/qa/QATemplatesPanel";
 import { QAThreadView } from "@/components/investor/qa/QAThreadView";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { askQuestion, getQaThread, getQuestionTemplates } from "@/lib/investor/api";
 import type { QATemplateKey, QAThread } from "@/lib/investor/types";
 
@@ -32,25 +32,30 @@ export default function InvestorMessages() {
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold">Investor Q&A</h1>
-        <div className="text-sm text-muted-foreground">Project: {projectId}</div>
-      </div>
+    <FigmaPage title="Investor Q&A" subtitle={`Project: ${projectId}`}>
+      <FigmaStatGrid
+        stats={[
+          { key: "questions", label: "Thread Items", value: String(thread.items.length) },
+          { key: "templates", label: "Template Groups", value: String(Object.keys(templates).length) },
+          { key: "status", label: "Q&A Workflow", value: "Active" },
+          { key: "sla", label: "SLA Tracking", value: "Planned" },
+        ]}
+      />
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
         <div className="xl:col-span-1">
           <QATemplatesPanel templates={templates} onSelectTemplate={(k, q) => setPreset({ templateKey: k, question: q })} />
-          <Card className="mt-4">
-            <CardHeader><CardTitle className="text-base">Structured Q&A (TODO)</CardTitle></CardHeader>
-            <CardContent className="text-sm text-muted-foreground">Add per-question status workflow, SLA, tagging, and attachment linkage to dataroom docs.</CardContent>
-          </Card>
+          <FigmaPanel className="mt-4" title="Structured Q&A (TODO)" subtitle="Lifecycle and governance enhancements.">
+            <div className="text-sm text-white/75">
+              Add per-question status workflow, SLA, tagging, and attachment linkage to dataroom docs.
+            </div>
+          </FigmaPanel>
         </div>
 
         <div className="xl:col-span-2">
           <QAThreadView thread={thread} onAsk={onAsk} preset={preset} />
         </div>
       </div>
-    </div>
+    </FigmaPage>
   );
 }
