@@ -1,6 +1,6 @@
 import Link from "next/link";
+import { FigmaPage, FigmaPanel, FigmaStatGrid } from "@/components/figma/FigmaPortalPrimitives";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { listCatalog } from "@/lib/investor/api";
 
 export default async function InvestorProject({ params }: { params: Promise<{ projectId: string }> }) {
@@ -11,31 +11,34 @@ export default async function InvestorProject({ params }: { params: Promise<{ pr
   if (!p) return <div className="text-sm text-muted-foreground">Project not found.</div>;
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold">{p.name}</h1>
-          <div className="text-sm text-muted-foreground">
-            {p.country}
-            {p.region ? ` | ${p.region}` : ""}
-          </div>
-        </div>
+    <FigmaPage
+      title={p.name}
+      subtitle={`${p.country}${p.region ? ` | ${p.region}` : ""}`}
+      right={
         <div className="flex gap-2">
           <Badge variant="secondary">{p.category}</Badge>
           <Badge variant="outline">{p.stage}</Badge>
         </div>
-      </div>
+      }
+    >
+      <FigmaStatGrid
+        stats={[
+          { key: "readiness", label: "Readiness", value: `${p.readinessScore}%` },
+          { key: "risk", label: "Risk Rating", value: p.riskRating },
+          { key: "ask", label: "Funding Ask", value: `${p.terms.currency} ${p.terms.askAmount.toLocaleString()}` },
+          { key: "credits", label: "Carbon Component", value: p.terms.carbonComponent.enabled ? "Enabled" : "Disabled" },
+        ]}
+      />
 
-      <Card>
-        <CardHeader><CardTitle className="text-base">Teaser vs Dataroom gating (TODO)</CardTitle></CardHeader>
-        <CardContent className="space-y-2 text-sm text-muted-foreground">
+      <FigmaPanel title="Teaser vs Dataroom Gating (TODO)" subtitle="NDA and approval scoped access control model.">
+        <div className="space-y-2 text-sm text-white/75">
           <div>Implement NDA/approval-based access gating and dataroom tabs for full investor diligence.</div>
           <div className="flex gap-3">
             <Link className="underline" href={`/investor/projects/${p.projectId}/underwrite`}>Go to Underwrite</Link>
             <Link className="underline" href={`/investor/messages?projectId=${p.projectId}`}>Go to Q&A</Link>
           </div>
-        </CardContent>
-      </Card>
-    </div>
+        </div>
+      </FigmaPanel>
+    </FigmaPage>
   );
 }

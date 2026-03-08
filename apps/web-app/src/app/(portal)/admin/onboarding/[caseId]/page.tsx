@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { AdminDecisionBar } from "@/components/onboarding/admin/AdminDecisionBar";
+import { FigmaPage, FigmaPanel, FigmaStatGrid } from "@/components/figma/FigmaPortalPrimitives";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getOnboardingCase, setRiskRating, updateCaseStatus } from "@/lib/onboarding/api";
 import type { CaseStatus, OnboardingCase, RiskRating } from "@/lib/onboarding/types";
@@ -29,18 +29,30 @@ export default function AdminOnboardingCase({ params }: { params: { caseId: stri
     await setRiskRating(params.caseId, risk);
   };
 
+  const screeningCount = onboardingCase.screening.length;
+  const documentsCount = onboardingCase.documents.length;
+  const fieldIssuesCount = onboardingCase.fieldIssues.length;
+  const docRequestsCount = onboardingCase.documentRequests.length;
+
   return (
-    <div className="space-y-6">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold">Case Review</h1>
-          <div className="text-sm text-muted-foreground">{title}</div>
-        </div>
+    <FigmaPage
+      title="Case Review"
+      subtitle={title}
+      right={
         <div className="flex gap-2">
           <Badge variant="secondary">{onboardingCase.status}</Badge>
           <Badge variant="outline">Risk: {onboardingCase.riskRating}</Badge>
         </div>
-      </div>
+      }
+    >
+      <FigmaStatGrid
+        stats={[
+          { key: "screening", label: "Screening Checks", value: String(screeningCount) },
+          { key: "docs", label: "Documents", value: String(documentsCount) },
+          { key: "issues", label: "Field Issues", value: String(fieldIssuesCount) },
+          { key: "requests", label: "Doc Requests", value: String(docRequestsCount) },
+        ]}
+      />
 
       <AdminDecisionBar onSetStatus={onSetStatus} onSetRisk={onSetRisk} />
 
@@ -55,11 +67,8 @@ export default function AdminOnboardingCase({ params }: { params: { caseId: stri
         </TabsList>
 
         <TabsContent value="summary">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Summary</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2 text-sm text-muted-foreground">
+          <FigmaPanel title="Summary" subtitle="Current case posture and profile context.">
+            <div className="space-y-2 text-sm text-white/75">
               <div>Kind: {onboardingCase.kind}</div>
               <div>Status: {onboardingCase.status}</div>
               <div>Reviewer: {onboardingCase.assignedReviewer ?? "-"}</div>
@@ -77,55 +86,40 @@ export default function AdminOnboardingCase({ params }: { params: { caseId: stri
                   <div>Roles: {onboardingCase.person.roles.join(", ")}</div>
                 </>
               )}
-            </CardContent>
-          </Card>
+            </div>
+          </FigmaPanel>
         </TabsContent>
 
         <TabsContent value="ownership">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Ownership & Control</CardTitle>
-            </CardHeader>
-            <CardContent className="text-sm text-muted-foreground">TODO: UBO threshold compliance, ownership table, and review notes.</CardContent>
-          </Card>
+          <FigmaPanel title="Ownership & Control" subtitle="UBO and control review trail.">
+            <div className="text-sm text-white/75">TODO: UBO threshold compliance, ownership table, and review notes.</div>
+          </FigmaPanel>
         </TabsContent>
 
         <TabsContent value="individuals">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Individuals</CardTitle>
-            </CardHeader>
-            <CardContent className="text-sm text-muted-foreground">TODO: per-person checklist, identity evidence, and reviewer notes.</CardContent>
-          </Card>
+          <FigmaPanel title="Individuals" subtitle="Person-level KYC checklist and evidence review.">
+            <div className="text-sm text-white/75">TODO: per-person checklist, identity evidence, and reviewer notes.</div>
+          </FigmaPanel>
         </TabsContent>
 
         <TabsContent value="screening">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Screening</CardTitle>
-            </CardHeader>
-            <CardContent className="text-sm text-muted-foreground">TODO: sanctions, PEP, and adverse media results/dispositions.</CardContent>
-          </Card>
+          <FigmaPanel title="Screening" subtitle="Sanctions, PEP, and adverse media dispositions.">
+            <div className="text-sm text-white/75">TODO: sanctions, PEP, and adverse media results/dispositions.</div>
+          </FigmaPanel>
         </TabsContent>
 
         <TabsContent value="documents">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Documents</CardTitle>
-            </CardHeader>
-            <CardContent className="text-sm text-muted-foreground">TODO: accept/reject documents with comments and request additional files.</CardContent>
-          </Card>
+          <FigmaPanel title="Documents" subtitle="Document review decisioning and request workflow.">
+            <div className="text-sm text-white/75">TODO: accept/reject documents with comments and request additional files.</div>
+          </FigmaPanel>
         </TabsContent>
 
         <TabsContent value="audit">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Audit</CardTitle>
-            </CardHeader>
-            <CardContent className="text-sm text-muted-foreground">TODO: audit log for field changes, documents, and decisions.</CardContent>
-          </Card>
+          <FigmaPanel title="Audit" subtitle="Case mutation and decision traceability.">
+            <div className="text-sm text-white/75">TODO: audit log for field changes, documents, and decisions.</div>
+          </FigmaPanel>
         </TabsContent>
       </Tabs>
-    </div>
+    </FigmaPage>
   );
 }

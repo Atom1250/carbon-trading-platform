@@ -1,7 +1,7 @@
 import { CashLedgerTable } from "@/components/investor/underwrite/CashLedgerTable";
 import { CarbonLedgerTable } from "@/components/investor/underwrite/CarbonLedgerTable";
+import { FigmaPage, FigmaPanel, FigmaStatGrid } from "@/components/figma/FigmaPortalPrimitives";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getUnderwriting } from "@/lib/investor/api";
 
 export default async function Underwrite({ params }: { params: Promise<{ projectId: string }> }) {
@@ -10,32 +10,37 @@ export default async function Underwrite({ params }: { params: Promise<{ project
   if (!u) return <div className="text-sm text-muted-foreground">Underwriting data not found.</div>;
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold">Underwrite</h1>
-          <div className="text-sm text-muted-foreground">Project ID: {u.projectId}</div>
-        </div>
+    <FigmaPage
+      title="Underwrite"
+      subtitle={`Project ID: ${u.projectId}`}
+      right={
         <div className="flex gap-2">
           <Badge variant="secondary">Readiness {u.readinessScore}%</Badge>
           <Badge variant="outline">Risk {u.riskRating}</Badge>
         </div>
-      </div>
+      }
+    >
+      <FigmaStatGrid
+        stats={[
+          { key: "readiness", label: "Readiness", value: `${u.readinessScore}%` },
+          { key: "risk", label: "Risk", value: u.riskRating },
+          { key: "instrument", label: "Instrument", value: u.terms.instrument },
+          { key: "ask", label: "Ask Amount", value: `${u.terms.currency} ${u.terms.askAmount.toLocaleString()}` },
+        ]}
+      />
 
-      <Card>
-        <CardHeader><CardTitle className="text-base">Scenario controls (TODO)</CardTitle></CardHeader>
-        <CardContent className="text-sm text-muted-foreground">Implement Base/Downside/Upside assumptions and optional carbon price sensitivity.</CardContent>
-      </Card>
+      <FigmaPanel title="Scenario Controls (TODO)" subtitle="Base/Downside/Upside and carbon sensitivity.">
+        <div className="text-sm text-white/75">Implement Base/Downside/Upside assumptions and optional carbon price sensitivity.</div>
+      </FigmaPanel>
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
         <CashLedgerTable terms={u.terms} />
         <CarbonLedgerTable terms={u.terms} />
       </div>
 
-      <Card>
-        <CardHeader><CardTitle className="text-base">Export (placeholder)</CardTitle></CardHeader>
-        <CardContent className="text-sm text-muted-foreground">Add export underwriting JSON and IC memo placeholder actions.</CardContent>
-      </Card>
-    </div>
+      <FigmaPanel title="Export (Placeholder)" subtitle="Underwriting package outputs.">
+        <div className="text-sm text-white/75">Add export underwriting JSON and IC memo placeholder actions.</div>
+      </FigmaPanel>
+    </FigmaPage>
   );
 }

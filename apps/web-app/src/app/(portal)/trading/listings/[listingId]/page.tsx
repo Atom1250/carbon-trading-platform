@@ -1,6 +1,6 @@
 import Link from "next/link";
+import { FigmaPage, FigmaPanel, FigmaStatGrid } from "@/components/figma/FigmaPortalPrimitives";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getListing } from "@/lib/trading/api";
 
 export default async function ListingDetail({ params }: { params: Promise<{ listingId: string }> }) {
@@ -9,25 +9,29 @@ export default async function ListingDetail({ params }: { params: Promise<{ list
   if (!listing) return <div className="text-sm text-muted-foreground">Listing not found.</div>;
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-start justify-between gap-2">
-        <div>
-          <h1 className="text-2xl font-semibold">{listing.projectName}</h1>
-          <div className="text-sm text-muted-foreground">{listing.standard} | {listing.registry} | {listing.location}</div>
-        </div>
-        <Badge variant="outline">{listing.category}</Badge>
-      </div>
+    <FigmaPage
+      title={listing.projectName}
+      subtitle={`${listing.standard} | ${listing.registry} | ${listing.location}`}
+      right={<Badge variant="outline">{listing.category}</Badge>}
+    >
+      <FigmaStatGrid
+        stats={[
+          { key: "qty", label: "Available Qty", value: listing.totalQty.toLocaleString() },
+          { key: "lot", label: "Min Lot", value: listing.minLot.toLocaleString() },
+          { key: "window", label: "Settlement", value: listing.settlementWindow },
+          { key: "sellers", label: "Sellers", value: String(listing.sellers.anonymizedCount) },
+        ]}
+      />
 
-      <Card>
-        <CardHeader><CardTitle className="text-base">Listing Detail</CardTitle></CardHeader>
-        <CardContent className="space-y-2 text-sm">
+      <FigmaPanel title="Listing Detail" subtitle="Methodology, pricing window, and RFQ handoff.">
+        <div className="space-y-2 text-sm text-white/75">
           <div>Methodology: {listing.methodology}</div>
           <div>Vintages: {listing.vintages.join(", ")}</div>
           <div>Indicative range: {listing.indicativePricing.currency} {listing.indicativePricing.rangeLow} - {listing.indicativePricing.rangeHigh}</div>
           <div>Settlement window: {listing.settlementWindow}</div>
           <Link className="underline" href={`/trading/rfq/new?listingId=${listing.id}`}>Create RFQ</Link>
-        </CardContent>
-      </Card>
-    </div>
+        </div>
+      </FigmaPanel>
+    </FigmaPage>
   );
 }
